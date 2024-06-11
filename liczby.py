@@ -1,52 +1,43 @@
-import cv2
 import numpy as np
 from PIL import Image
 
-
-def podziel_obraz(obrazek, wielkosc_czasci):
+def podziel_obraz(obrazek, wielkosc_czesci):
   """
-  Dzieli obraz na mniejsze części o określonej wielkości i zwraca listę tych części.
+  Dzieli obraz na części z przeskokiem i nakładaniem.
 
   Argumenty:
-    obrazek (obiekt cv2.Mat): Obraz, który ma zostać podzielony.
-    wielkosc_czasci (tuple): Rozmiar (szerokość, wysokość) każdej części obrazu.
+    obrazek_path: Ścieżka do pliku obrazu PNG.
+    wielkosc_czesci: Rozmiar części (szerokość x wysokość).
 
   Zwracany wartość:
-    lista: Lista obiektów cv2.Mat, zawierająca wszystkie części obrazu.
+    Lista zawierająca wszystkie wycięte fragmenty obrazu.
   """
 
-  # Sprawdź, czy obraz jest prawidłowy
-  if not isinstance(obrazek, cv2.Mat):
-    raise TypeError("Argument 'obrazek' musi być obiektem cv2.Mat")
+  # Wczytaj obraz
+  szerokosc, wysokosc = obrazek.size
 
-  # Pobierz wymiary obrazu
-  wysokosc, szerokosc, kanaly = obrazek.shape
+  # Inicjalizuj listę wycinków
+  wycinki = []
 
-  # Określ liczbę części w poziomie i pionie
-  liczba_czesc_w_poziomie = szerokosc // wielkosc_czasci[0]
-  liczba_czesc_w_pionie = wysokosc // wielkosc_czasci[1]
+  # Iteruj po wierszach obrazu
+  for y in range(0, wysokosc - wielkosc_czesci[1] + 1):
+    # Zwiększ przeskok pikseli o 1 po każdym wierszu
+    przeskok_pikseli = 1 + y
 
-  # Utwórz pustą listę na części obrazu
-  czesci_obrazu = []
+    # Iteruj po kolumnach obrazu
+    for x in range(0, szerokosc - wielkosc_czesci[0] + 1, przeskok_pikseli):
+      # Wykonaj wycięcie części
+      wycinek = obrazek.crop((x, y, x + wielkosc_czesci[0], y + wielkosc_czesci[1]))
 
-  # Podziel obraz na części i dodaj je do listy
-  for i in range(liczba_czesc_w_pionie):
-    for j in range(liczba_czesc_w_poziomie):
-      # Wyodrębnij część obrazu
-      x = j * wielkosc_czasci[0]
-      y = i * wielkosc_czasci[1]
-      czesc = obrazek[y:y + wielkosc_czasci[1], x:x + wielkosc_czasci[0]]
+      # Konwertuj wycinek na format numpy
+      wycinek_numpy = np.array(wycinek)
 
-      # Dodaj część do listy
-      czesci_obrazu.append(czesc)
+      # Dodaj wycinek do listy
+      wycinki.append(wycinek_numpy)
 
-  return czesci_obrazu
+  return wycinki
 
 # Odczytaj obraz za pomocą modułu PIL
-obraz_pil = Image.open('obraz.png')
+obrazek = Image.open('obraz.png')
 
-# Konwertuj obraz PIL na obiekt cv2.Mat
-obrazek = cv2.cvtColor(np.array(obraz_pil), cv2.COLOR_RGB2BGR)
-print(type(obrazek))
-
-podziel_obraz(obrazek=obrazek, wielkosc_czasci=(3, 3))
+print(podziel_obraz(obrazek, (5, 15)))
