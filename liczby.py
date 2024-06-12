@@ -37,7 +37,38 @@ def podziel_obraz(obrazek, wielkosc_czesci):
 
   return wycinki
 
+def replace_non_matching_pixels(image_array, target_rgb):
+  """Replaces non-matching pixels with black in a NumPy image array.
+
+  Args:
+    image_array (numpy.ndarray): The NumPy array representing the image.
+    target_rgb (tuple): The target RGB color values (247, 243, 247).
+
+  Returns:
+    numpy.ndarray: The modified image array with non-matching pixels replaced by black.
+  """
+  # Check if the array has an alpha channel (fourth dimension)
+  if image_array.ndim == 4:
+    # Extract RGB values, ignoring the alpha channel
+    rgb_array = image_array[..., :3]
+  else:
+    rgb_array = image_array
+
+  # Replace non-matching pixels with black
+  modified_image = np.where(np.all(rgb_array[:, :, :3] == target_rgb, axis=2), image_array, np.zeros_like(image_array))
+  return modified_image
+
 # Odczytaj obraz za pomocą modułu PIL
 obrazek = Image.open('obraz.png')
 
-print(podziel_obraz(obrazek, (5, 15)))
+obrazki = podziel_obraz(obrazek, (5, 15))
+
+szablon = Image.open('szablon.png')
+szablon = np.array(szablon)
+
+obrazek = np.array(obrazek)
+
+obrazek = obrazki[0][:, :, :3]
+
+
+print(replace_non_matching_pixels(obrazek, (247, 243, 247)))
