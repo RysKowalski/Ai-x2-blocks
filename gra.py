@@ -152,7 +152,6 @@ class gra:
 	def get_raw(self):
 		map = self.map
 		liczba = self.liczba
-		state = self.state
 		lose = self.lose
 		points = self.points
 		
@@ -170,18 +169,16 @@ class gra:
 		import os
 		map = self.map
 		liczba = self.liczba
-		state = self.state
 		lose = self.lose
 		points = self.points
 		
 		while not lose:
 			map = self.map
 			liczba = self.liczba
-			state = self.state
 			lose = self.lose
 			points = self.points
 			
-			os.system('clear')
+			os.system('cls')
 			print(f'liczba punktów: {points}\n')
 						
 			wmap = map.copy()
