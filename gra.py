@@ -180,10 +180,28 @@ class gra:
 			
 			os.system('cls')
 			print(f'liczba punktów: {points}\n')
-						
+
 			wmap = map.copy()
 			del wmap[7]
-			
+			#for i in wmap:
+			#	print(i)
+
+			spaces = [[0, 0], 0]
+			mapmax = []
+			newmap = []
+			for i, col in enumerate(wmap):
+				for j, num in enumerate(wmap[i]):
+					mapmax.append(num)
+			spaces[1] = max(mapmax)
+
+			for i, col in enumerate(wmap):
+				for j, num in enumerate(wmap[i]):
+					s = True
+
+
+
+
+
 			print(f'\nobecna liczba: {2 ** liczba[0]}\nnastępna liczba: {2 ** liczba[1]}\n')
 			
 			ruh = input('podaj liczbę od 1 do 5: ')
@@ -204,5 +222,3 @@ class gra:
 
 t = gra()
 t.human()
-            
- 
