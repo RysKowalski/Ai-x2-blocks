@@ -178,26 +178,38 @@ class gra:
 			lose = self.lose
 			points = self.points
 			
-			os.system('cls')
+			os.system('clear')
 			print(f'liczba punktów: {points}\n')
 
 			wmap = map.copy()
 			del wmap[7]
-			#for i in wmap:
-			#	print(i)
-
-			spaces = [[0, 0], 0]
+			
 			mapmax = []
 			newmap = []
+			
 			for i, col in enumerate(wmap):
 				for j, num in enumerate(wmap[i]):
-					mapmax.append(num)
-			spaces[1] = max(mapmax)
+					mapmax.append(2 ** num)
+			maxlen = len(str(max(mapmax)))
 
+			
 			for i, col in enumerate(wmap):
 				for j, num in enumerate(wmap[i]):
+					spaces = maxlen - len(str(num))
+					space = [0, 0]
+					
 					s = True
-
+					for k in range(0, spaces):
+						if s:
+							space[0] += 1
+						else:
+							space[1] += 1
+						s = not s
+					
+					wmap[i][j] = f"{' ' * space[0]}{2 ** num}{' ' * space[1]}"
+			
+			for i in wmap:
+				print(i)
 
 
 
