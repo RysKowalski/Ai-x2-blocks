@@ -107,13 +107,10 @@ class gra:
 		
 		t = 0
 		while True:
-			maps = map.copy()
 			map, map_ = spadanie(map, map_)
 			map, map_ = lacz(map, map_)
 			map, map_ = spadanie(map, map_)
-			if map != lacz(map, map_) and map != spadanie(map, map_):
-				t += 1
-				if t == 3:
+			if (map, map_) == lacz(map, map_) and (map, map_) == spadanie(map, map_):
 					break
 		self.sprawdz()
 		self.map = map
@@ -140,7 +137,7 @@ class gra:
 		self.state = state
 	
 	def get(self):
-		map = self.map
+		#map = self.map
 		liczba = self.liczba
 		state = self.state
 		lose = self.lose
@@ -169,23 +166,20 @@ class gra:
 		import os
 		map = self.map
 		liczba = self.liczba
-		lose = self.lose
 		points = self.points
 		
-		while not lose:
+		while not self.lose:
 			map = self.map
 			liczba = self.liczba
-			lose = self.lose
 			points = self.points
 			
 			os.system('clear')
 			print(f'liczba punktów: {points}\n')
 
 			wmap = map.copy()
-			del wmap[7]
 			
 			mapmax = []
-			newmap = []
+			newmap = [[''] * 5 for _ in range(7)]
 			
 			for i, col in enumerate(wmap):
 				for j, num in enumerate(wmap[i]):
@@ -195,21 +189,30 @@ class gra:
 			
 			for i, col in enumerate(wmap):
 				for j, num in enumerate(wmap[i]):
-					spaces = maxlen - len(str(num))
-					space = [0, 0]
+					if i == 7:
+						break
+					spaces = maxlen - len(str(2 ** num))
+					if num != 0:
+						space = [0, 0]
 					
-					s = True
-					for k in range(0, spaces):
-						if s:
-							space[0] += 1
-						else:
-							space[1] += 1
-						s = not s
+						s = True
+						for k in range(0, spaces):
+							if s:
+								space[0] += 1
+							else:
+								space[1] += 1
+							s = not s
 					
-					wmap[i][j] = f"{' ' * space[0]}{2 ** num}{' ' * space[1]}"
+						newmap[i][j] = f"{' ' * space[0]}{2 ** num}{' ' * space[1]}"
+					else:
+						newmap[i][j] = ' ' * maxlen
 			
-			for i in wmap:
-				print(i)
+			for i in range(0, len(newmap)):
+				print('_' * (len('|'.join(newmap[i])) + 2))
+				print(f"|{'|'.join(newmap[i])}|")
+			print('_' * (len('|'.join(newmap[i])) + 2))
+				
+			
 
 
 
