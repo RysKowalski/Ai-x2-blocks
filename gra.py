@@ -14,7 +14,7 @@ class gra:
         
 	def ruch(self, move):
 	
-		def spadanie(lista, data):
+		def spadanie(lista, data, changes = True):
             
 			def fall(list):
 				for col, coli in enumerate(list):
@@ -45,9 +45,12 @@ class gra:
 			while fallen(lista):
 				map = fall(lista)
 			
-			return lista, data
+			if changes:
+				return lista, data
+			else:
+				return lista
 		
-		def lacz(map, data):
+		def lacz(map, data, changes = True):
 			points = self.points
 			pos = []
 			pos_ = {}
@@ -95,7 +98,10 @@ class gra:
 					map[col][row] += inc
 					points += 2 ** map[col][row] * inc
 				self.points = points
-				return map, data
+				if changes:
+					return map, data
+				else:
+					return map
 				
 			
 		map_ = [[999] * 5 for _ in range(8)]
@@ -110,7 +116,8 @@ class gra:
 			map, map_ = spadanie(map, map_)
 			map, map_ = lacz(map, map_)
 			map, map_ = spadanie(map, map_)
-			if (map, map_) == lacz(map, map_) and (map, map_) == spadanie(map, map_):
+			map, map_ = lacz(map, map_)
+			if str(map) == str(lacz(map, map_, False)) and str(map) == str(spadanie(map, map_, False)):
 					break
 		self.sprawdz()
 		self.map = map
@@ -158,9 +165,8 @@ class gra:
 				ret.append(num)
 		for i in liczba:
 			ret.append(i)
-		ret.append(points)
 		
-		return [ret, lose, points]
+		return ret
 	
 	def human(self):
 		import os
@@ -211,7 +217,7 @@ class gra:
 				print('_' * (len('|'.join(newmap[i])) + 2))
 				print(f"|{'|'.join(newmap[i])}|")
 			print('_' * (len('|'.join(newmap[i])) + 2))
-				
+	
 			
 
 
@@ -230,10 +236,3 @@ class gra:
 				except:
 					ruh = input('nie udało się wykonać ruchu, musisz podać liczbę od 1 do 5: ')
 			self.ruch(int(ruh) - 1)
-
-
-
-
-
-t = gra()
-t.human()
