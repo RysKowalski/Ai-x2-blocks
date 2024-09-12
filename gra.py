@@ -11,97 +11,35 @@ class gra:
 		self.lose = False
 		self.maxi = 10
 		self.points = 0
-        
+		self.last_points = 0
+
 	def ruch(self, move):
 	
-		def spadanie(lista, data, changes = True):
-            
-			def fall(list):
-				for col, coli in enumerate(list):
-					for row, num in enumerate(list[col]):
-						if num != 0:
-							for i in range(col - 1, -1, -1):  
-								if list[i][row] == 0:
-									list[i][row] = num
-									data[i][row] = 0
-									data[col][row] = 999
-									list[col][row] = 0
-									break
-				return list
-            
-			def fallen(list):
-				for col, coli in enumerate(list):
-					for row, num in enumerate(list[col]):
-						if num != 0:
-							for i in range(col - 1, -1, -1):  
-								if list[i][row] == 0:
-									return True
-				return False
-			
-			for col, coli in enumerate(data):
-				for row, num in enumerate(data[col]):
-					data[col][row] += 1
-			
-			while fallen(lista):
-				map = fall(lista)
-			
-			if changes:
-				return lista, data
-			else:
-				return lista
+		def spadanie(lista, data):
+			# Optymalizacja algorytmu spadania - jedno przejście przez kolumny i wiersze
+			for col in range(7, 0, -1):
+				for row in range(5):
+					if lista[col][row] == 0 and lista[col - 1][row] != 0:
+						lista[col][row], lista[col - 1][row] = lista[col - 1][row], 0
+						data[col][row] = 0
+						data[col - 1][row] = 999
+			return lista, data
 		
-		def lacz(map, data, changes = True):
+		def lacz(map, data):
 			points = self.points
-			pos = []
-			pos_ = {}
-			for col, coli in enumerate(data):
-				for row, num in enumerate(data[col]):
-					num *= 10
-					while num in pos_:
-						num += 1
-					pos_[num] = [col, row]
-			_pos = sorted(pos_.keys())
-			for i in _pos:
-				pos.append(pos_[i])
-			
-			for i, poz in enumerate(pos):
-				col = poz[0]
-				row = poz[1]
-				special = [False, False, False]
-				if row == 0:
-					special[0] = True
-				if col == 0:
-					special[1] = True
-				if row == 4:
-					special[2] = True
-				
-				if map[col][row] != 0:
-					inc = 0
-					if not special[0]:
-						if map[col][row] == map[col][row - 1]:
-							map[col][row - 1] = 0
-							inc += 1
-							data[col][row] = 0
-							data[col][row - 1] = 999
-					if not special[1]:
-						if map[col][row] == map[col - 1][row]:
-							map[col - 1][row] = 0
-							inc += 1
-							data[col][row] = 0
-							data[col][row] = 999
-					if not special[2]:
-						if map[col][row] == map[col][row + 1]:
-							map[col][row + 1] = 0
-							inc += 1
-							data[col][row] = 0
-							data[col][row + 1] = 999
-					map[col][row] += inc
-					points += 2 ** map[col][row] * inc
-				self.points = points
-				if changes:
-					return map, data
-				else:
-					return map
+			for col in range(7):
+				for row in range(5):
+					if map[col][row] != 0:
+						# Optymalizacja sprawdzenia sąsiadów i scalanie
+						for d_col, d_row in [(-1, 0), (0, -1), (0, 1)]:
+							new_col, new_row = col + d_col, row + d_row
+							if 0 <= new_col < 8 and 0 <= new_row < 5 and map[new_col][new_row] == map[col][row]:
+								map[new_col][new_row] = 0
+								map[col][row] += 1
+								points += 2 ** map[col][row]
+								break
+			self.points = points
+			return map, data
 				
 			
 		map_ = [[999] * 5 for _ in range(8)]
@@ -144,7 +82,7 @@ class gra:
 		self.state = state
 	
 	def get(self):
-		#map = self.map
+		map = self.map
 		liczba = self.liczba
 		state = self.state
 		lose = self.lose
@@ -168,6 +106,11 @@ class gra:
 		
 		return ret
 	
+	def get_points(self, all=False):
+		points = self.points
+		last_points = self.last_points
+		return points - last_points
+
 	def human(self):
 		import os
 		map = self.map
