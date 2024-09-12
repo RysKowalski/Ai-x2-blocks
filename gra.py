@@ -11,35 +11,99 @@ class gra:
 		self.lose = False
 		self.maxi = 10
 		self.points = 0
-		self.last_points = 0
-
+		self.history = []
+		self.last_move = None
+        
 	def ruch(self, move):
 	
-		def spadanie(lista, data):
-			# Optymalizacja algorytmu spadania - jedno przejście przez kolumny i wiersze
-			for col in range(7, 0, -1):
-				for row in range(5):
-					if lista[col][row] == 0 and lista[col - 1][row] != 0:
-						lista[col][row], lista[col - 1][row] = lista[col - 1][row], 0
-						data[col][row] = 0
-						data[col - 1][row] = 999
-			return lista, data
+		def spadanie(lista, data, changes = True):
+            
+			def fall(list):
+				for col, coli in enumerate(list):
+					for row, num in enumerate(list[col]):
+						if num != 0:
+							for i in range(col - 1, -1, -1):  
+								if list[i][row] == 0:
+									list[i][row] = num
+									data[i][row] = 0
+									data[col][row] = 999
+									list[col][row] = 0
+									break
+				return list
+            
+			def fallen(list):
+				for col, coli in enumerate(list):
+					for row, num in enumerate(list[col]):
+						if num != 0:
+							for i in range(col - 1, -1, -1):  
+								if list[i][row] == 0:
+									return True
+				return False
+			
+			for col, coli in enumerate(data):
+				for row, num in enumerate(data[col]):
+					data[col][row] += 1
+			
+			while fallen(lista):
+				map = fall(lista)
+			
+			if changes:
+				return lista, data
+			else:
+				return lista
 		
-		def lacz(map, data):
+		def lacz(map, data, changes = True):
 			points = self.points
-			for col in range(7):
-				for row in range(5):
-					if map[col][row] != 0:
-						# Optymalizacja sprawdzenia sąsiadów i scalanie
-						for d_col, d_row in [(-1, 0), (0, -1), (0, 1)]:
-							new_col, new_row = col + d_col, row + d_row
-							if 0 <= new_col < 8 and 0 <= new_row < 5 and map[new_col][new_row] == map[col][row]:
-								map[new_col][new_row] = 0
-								map[col][row] += 1
-								points += 2 ** map[col][row]
-								break
-			self.points = points
-			return map, data
+			pos = []
+			pos_ = {}
+			for col, coli in enumerate(data):
+				for row, num in enumerate(data[col]):
+					num *= 10
+					while num in pos_:
+						num += 1
+					pos_[num] = [col, row]
+			_pos = sorted(pos_.keys())
+			for i in _pos:
+				pos.append(pos_[i])
+			
+			for i, poz in enumerate(pos):
+				col = poz[0]
+				row = poz[1]
+				special = [False, False, False]
+				if row == 0:
+					special[0] = True
+				if col == 0:
+					special[1] = True
+				if row == 4:
+					special[2] = True
+				
+				if map[col][row] != 0:
+					inc = 0
+					if not special[0]:
+						if map[col][row] == map[col][row - 1]:
+							map[col][row - 1] = 0
+							inc += 1
+							data[col][row] = 0
+							data[col][row - 1] = 999
+					if not special[1]:
+						if map[col][row] == map[col - 1][row]:
+							map[col - 1][row] = 0
+							inc += 1
+							data[col][row] = 0
+							data[col][row] = 999
+					if not special[2]:
+						if map[col][row] == map[col][row + 1]:
+							map[col][row + 1] = 0
+							inc += 1
+							data[col][row] = 0
+							data[col][row + 1] = 999
+					map[col][row] += inc
+					points += 2 ** map[col][row] * inc
+				self.points = points
+				if changes:
+					return map, data
+				else:
+					return map
 				
 			
 		map_ = [[999] * 5 for _ in range(8)]
@@ -59,6 +123,8 @@ class gra:
 					break
 		self.sprawdz()
 		self.map = map
+		self.history.append(self.get_ui())
+		self.last_move = move
 
 	def sprawdz(self):
 		map = self.map
@@ -106,11 +172,6 @@ class gra:
 		
 		return ret
 	
-	def get_points(self, all=False):
-		points = self.points
-		last_points = self.last_points
-		return points - last_points
-
 	def human(self):
 		import os
 		map = self.map
@@ -122,7 +183,7 @@ class gra:
 			liczba = self.liczba
 			points = self.points
 			
-			os.system('clear')
+			os.system('cls')
 			print(f'liczba punktów: {points}\n')
 
 			wmap = map.copy()
@@ -179,3 +240,67 @@ class gra:
 				except:
 					ruh = input('nie udało się wykonać ruchu, musisz podać liczbę od 1 do 5: ')
 			self.ruch(int(ruh) - 1)
+			
+			
+	def get_ui(self):
+		ui = []
+		
+		map = self.map
+		liczba = self.liczba
+		points = self.points
+		last_move = self.last_move
+		
+		ui.append(f'liczba punktów: {points}\n')
+
+		wmap = map.copy()
+			
+		mapmax = []
+		newmap = [[''] * 5 for _ in range(7)]
+			
+		for i, col in enumerate(wmap):
+			for j, num in enumerate(wmap[i]):
+				mapmax.append(2 ** num)
+		maxlen = len(str(max(mapmax)))
+
+			
+		for i, col in enumerate(wmap):
+			for j, num in enumerate(wmap[i]):
+				if i == 7:
+					break
+				spaces = maxlen - len(str(2 ** num))
+				if num != 0:
+					space = [0, 0]
+					
+					s = True
+					for k in range(0, spaces):
+						if s:
+							space[0] += 1
+						else:
+							space[1] += 1
+						s = not s
+					
+					newmap[i][j] = f"{' ' * space[0]}{2 ** num}{' ' * space[1]}"
+				else:
+					newmap[i][j] = ' ' * maxlen
+			
+		for i in range(0, len(newmap)):
+			ui.append('_' * (len('|'.join(newmap[i])) + 2))
+			ui.append(f"|{'|'.join(newmap[i])}|")
+		ui.append('_' * (len('|'.join(newmap[i])) + 2))
+	
+		ui.append(f'\nobecna liczba: {2 ** liczba[0]}\nnastępna liczba: {2 ** liczba[1]}\n')
+		ui.append(f'ostatni_ruch:{last_move}\n\n\n')
+		return ui
+
+
+	def get_revard(self):
+		map = self.map
+		points = self.points
+		moves = len(self.history)
+		ret = 0
+		t = 0
+		
+		
+		points *= moves * 2
+		ret += points
+		return ret
