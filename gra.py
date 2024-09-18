@@ -4,7 +4,7 @@ class gra:
 	def __init__(self):
 		map = [[0] * 5 for _ in range(8)]
 		self.map = map
-        
+		
 		liczba = [random.randint(1, 6), random.randint(1, 6)]
 		self.liczba = liczba
 		self.state = 0
@@ -13,11 +13,17 @@ class gra:
 		self.points = 0
 		self.history = []
 		self.last_move = None
-        
+		self.moves = [True] * 5
+		self.max_number = 0
+
 	def ruch(self, move):
 	
+		if self.map[6][move] != 0:
+			self.sprawdz()
+			return None
+
 		def spadanie(lista, data, changes = True):
-            
+			
 			def fall(list):
 				for col, coli in enumerate(list):
 					for row, num in enumerate(list[col]):
@@ -30,7 +36,7 @@ class gra:
 									list[col][row] = 0
 									break
 				return list
-            
+			
 			def fallen(list):
 				for col, coli in enumerate(list):
 					for row, num in enumerate(list[col]):
@@ -131,21 +137,33 @@ class gra:
 		maxi = self.maxi
 		lose = self.lose
 		state = self.state
+		moves = [True] * 5  # Zakładamy, że wszystkie kolumny są początkowo dostępne
+		max_number = self.max_number
+
+
+		# Sprawdzenie, czy kolumny są pełne i zablokowanie ruchów w pełnych kolumnach
+		for i in range(5):
+			if map[6][i] != 0:  # Jeśli na pozycji (6, i) w kolumnie jest liczba, to kolumna jest pełna
+				moves[i] = False
+
+		lose_ = True
+		for i in moves:
+			if i:
+				lose_ = False
+		lose = lose_
 		
-		if any(num != 0 for num in map[7]):
-			lose = True
-		
-		mmax = []
-		for col, coli in enumerate(map):
-			for row, num in enumerate(map[col]):
-				mmax.append(num)
-		if max(mmax) >= maxi:
-			maxi = max(mmax)
+		# Aktualizacja maksymalnej liczby na planszy i stanu gry
+		max_number = max(max(row) for row in map)
+		if max_number >= maxi:
+			maxi = max_number
 			state += 1
 		
+		# Aktualizacja zmiennych klasy
 		self.maxi = maxi
 		self.lose = lose
 		self.state = state
+		self.moves = moves  # Aktualizacja dostępnych ruchów
+		self.max_number = max_number
 	
 	def get(self):
 		map = self.map
@@ -166,7 +184,10 @@ class gra:
 		ret = []
 		for col, coli in enumerate(map):
 			for raw, num in enumerate(map[col]):
-				ret.append(num)
+				if num == 0:
+					ret.append(num)
+				else:
+					ret.append(num - self.state)
 		for i in liczba:
 			ret.append(i)
 		
@@ -183,7 +204,10 @@ class gra:
 			liczba = self.liczba
 			points = self.points
 			
+
 			os.system('cls')
+
+
 			print(f'liczba punktów: {points}\n')
 
 			wmap = map.copy()
@@ -293,14 +317,31 @@ class gra:
 		return ui
 
 
-	def get_revard(self):
+	def get_reward(self):
+		# Bazowe zmienne
 		map = self.map
 		points = self.points
-		moves = len(self.history)
-		ret = 0
-		t = 0
+		max_number = self.max_number
 		
+		# Nagroda za maksymalną liczbę na planszy
+		reward = 0
+		reward += max_number * 100  # Wzmocniona nagroda za większe liczby
+
+		# Kara za sytuacje, gdy mniejsza liczba jest pod większą
+		penalty = 0
+		for col in range(len(map[0])):  # Przechodzimy przez każdą kolumnę
+			for row in range(1, len(map)):  # Sprawdzamy od drugiego rzędu w dół
+				if map[row][col] > 0 and map[row - 1][col] > 0:  # Tylko, jeśli obie liczby są różne od 0
+					if map[row][col] < map[row - 1][col]:  # Mniejsza liczba pod większą
+						penalty += (map[row - 1][col] - map[row][col]) * 10  # Kara zależna od różnicy liczb
 		
-		points *= moves * 2
-		ret += points
-		return ret
+		# Nagroda lub kara zależna od liczby punktów (zwiększamy jej znaczenie)
+		reward += points * 10  # Zwiększamy wpływ liczby punktów na końcową nagrodę
+		
+		# Kara za przegraną
+		if self.lose:
+			reward -= 1000  # Duża kara za przegraną, by unikać kończenia gry
+		
+		# Ostateczny wynik
+		final_reward = reward - penalty
+		return final_reward

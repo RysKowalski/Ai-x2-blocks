@@ -21,19 +21,34 @@ def eval_genomes(genomes, config):
             
             # Sieć podejmuje decyzję na podstawie stanu gry
             output = net.activate(game_state)
-            
-            # Wybieramy indeks z największą wartością jako ruch
-            move = output.index(max(output))
-            
-            # Wykonujemy ruch w grze
-            game.ruch(move)
-            
+
+            moves = {}
+            for i in range(len(game.moves)):
+                if game.moves[i]:
+                    moves[output[i]] = i
+
+            game.ruch(moves[max(moves.keys())])
+
             # Fitness opieramy na liczbie punktów w grze
-            fitness = game.get_revard()
+            fitness = game.get_reward()
         
         genome.fitness = fitness  # Przypisujemy wynik fitness do genomu
         if fitness > max_points:
             max_map = game.history
+
+# Funkcja do zapisywania stanu populacji
+def save_population(population, filename):
+    with open(filename, "wb") as f:
+        pickle.dump(population, f)
+
+# Funkcja do ładowania stanu populacji
+def load_population(config, filename):
+    with open(filename, "rb") as f:
+        return pickle.load(f)
+
+# Funkcja czyszcząca reporterów przed ich ponownym dodaniem
+def reset_reporters(population):
+    population.reporters.reporters.clear()
 
 # Funkcja konfigurująca i uruchamiająca NEAT
 def run_neat(config_file):
@@ -43,40 +58,43 @@ def run_neat(config_file):
         neat.DefaultSpeciesSet,
         neat.DefaultStagnation,
         config_file  
-
     )
 
-    population = neat.Population(config)
-    population.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    population.add_reporter(stats)  
-
-
     # Pytanie o załadowanie sieci
-    load_network = input("Czy załadować istniejącą sieć? (tak/nie): ")
+    load_network = input("Czy załadować istniejącą populację? (tak/nie): ")
     if load_network.lower() == "tak":
         try:
-            filename = input("Podaj nazwę pliku: ")
-            with open(filename, "rb") as f:
-                winner = pickle.load(f)
-            print("Sieć załadowana.")
-            population.add_member(winner)
+            filename = input("Podaj nazwę pliku z populacją: ")
+            population = load_population(config, filename)
+            print(f"Populacja załadowana z pliku {filename}.")
         except FileNotFoundError:
-            print("Plik z siecią nie istnieje. Tworzona nowa populacja.")
+            print("Plik z populacją nie istnieje. Tworzona nowa populacja.")
+            population = neat.Population(config)
+    else:
+        population = neat.Population(config)
 
-    winner = population.run(eval_genomes, 150)
+    # Reset reporterów przed ich ponownym dodaniem
+    reset_reporters(population)
 
+    # Dodanie reporterów tylko raz
+    population.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    population.add_reporter(stats)
+
+    # Trening NEAT
+    winner = population.run(eval_genomes, 20)
+
+    # Wyświetlanie najlepszego wyniku
     for i in max_map:
         for j in i:
             print(j)
 
-    # Zapisywanie sieci z możliwością wyboru nazwy
-    save_network = input("Czy zapisać wytrenowaną sieć? (tak/nie): ")
+    # Zapisywanie populacji z możliwością wyboru nazwy
+    save_network = input("Czy zapisać wytrenowaną populację? (tak/nie): ")
     if save_network.lower() == "tak":
         filename = input("Podaj nazwę pliku do zapisu: ")
-        with open(filename, "wb") as f:
-            pickle.dump(winner, f)
-        print(f"Sieć zapisana do pliku {filename}.")
+        save_population(population, filename)
+        print(f"Populacja zapisana do pliku {filename}.")
 
 if __name__ == "__main__":
     # Poprawa obsługi ścieżki do pliku konfiguracji
