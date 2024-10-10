@@ -1,23 +1,14 @@
 from gra import gra
-from random import randint
-
-
-avalible_moves = [True, True, True, True, False]
-output = [1, 4, 3, 2, 444]
+from os import system
 
 
 
+t = gra()
 
-
-
-moves = []
-
-maks_value = -1
-for i in range(len(avalible_moves)):
-    if avalible_moves[i]:  # Jeśli wartość bool jest True
-        if output[i] > maks_value:
-            maks_value = output[i]
-            maks_index = i
-
-
-print(maks_index)
+while not t.lose:
+    system('cls')
+    for i in t.get_ui():
+        print(i)
+    print(len(t.history))
+    print(t.get_reward())
+    t.ruch(int(input('liczba od 0 do 4: ')) - 1)

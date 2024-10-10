@@ -1,19 +1,26 @@
 import neat
 import os
 import pickle
+import tkinter as tk
+from tkinter import messagebox
+import threading  # Dodajemy threading do obsługi wątków
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from gra import gra
+import visualize
 
 # Funkcja fitness dla NEAT
-
 max_map = None
 max_points = 0
+history_all_games = {}  # Przechowywanie historii gier dla każdej generacji
+
 def eval_genomes(genomes, config):
-    global max_map
-    global max_points
+    global max_map, max_points, history_all_games
     for genome_id, genome in genomes:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         game = gra()  # Tworzymy nową instancję gry dla każdego organizmu
         fitness = 0
+        history = []
         
         # Dopóki gra nie jest przegrana, sieć podejmuje decyzje
         while not game.lose:
@@ -33,8 +40,11 @@ def eval_genomes(genomes, config):
             fitness = game.get_reward()
         
         genome.fitness = fitness  # Przypisujemy wynik fitness do genomu
-        if fitness > max_points:
-            max_map = game.history
+        
+        # Zapisujemy historię gry dla danego genomu
+        history_all_games[genome_id] = game.history
+        history_all_games[genome_id].append(['ruchy: ' + str(len(game.history))])
+        history_all_games[genome_id].append(['fitness: ' + str(fitness)])
 
 # Funkcja do zapisywania stanu populacji
 def save_population(population, filename):
@@ -50,8 +60,8 @@ def load_population(config, filename):
 def reset_reporters(population):
     population.reporters.reporters.clear()
 
-# Funkcja konfigurująca i uruchamiająca NEAT
-def run_neat(config_file):
+# Funkcja do uruchamiania NEAT
+def run_neat(config_file, generations_callback):
     config = neat.config.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
@@ -60,47 +70,122 @@ def run_neat(config_file):
         config_file  
     )
 
-    # Pytanie o załadowanie sieci
-    load_network = input("Czy załadować istniejącą populację? (tak/nie): ")
-    if load_network.lower() == "tak":
-        try:
-            filename = input("Podaj nazwę pliku z populacją: ")
-            population = load_population(config, filename)
-            print(f"Populacja załadowana z pliku {filename}.")
-        except FileNotFoundError:
-            print("Plik z populacją nie istnieje. Tworzona nowa populacja.")
-            population = neat.Population(config)
-    else:
-        population = neat.Population(config)
-
+    # Tworzenie nowej populacji
+    population = neat.Population(config)
+    
     # Reset reporterów przed ich ponownym dodaniem
     reset_reporters(population)
-
-    # Dodanie reporterów tylko raz
     population.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    # Trening NEAT
-    winner = population.run(eval_genomes, 20)
 
-    # Wyświetlanie najlepszego wyniku
-    for i in max_map:
-        for j in i:
-            print(j)
+    for i in range(2000):
+    # Trening z wywołaniem callbacku po każdej generacji
+        winner = population.run(eval_genomes, 1)
+        
+        # Wywołanie callbacku po zakończeniu treningu
+        generations_callback(stats)
 
-    # Zapisywanie populacji z możliwością wyboru nazwy
-    save_network = input("Czy zapisać wytrenowaną populację? (tak/nie): ")
-    if save_network.lower() == "tak":
-        filename = input("Podaj nazwę pliku do zapisu: ")
-        save_population(population, filename)
-        print(f"Populacja zapisana do pliku {filename}.")
+# Tworzenie GUI
+class NEATApp:
+    def __init__(self, root, config_file):
+        self.root = root
+        self.root.title("NEAT GUI")
+
+        # Tworzenie widżetów GUI
+        self.label = tk.Label(root, text="Wybierz generację do wyświetlenia gry:")
+        self.label.pack()
+
+        self.generation_listbox = tk.Listbox(root)
+        self.generation_listbox.pack()
+
+        self.show_game_button = tk.Button(root, text="Pokaż grę", command=self.show_game)
+        self.show_game_button.pack()
+
+        self.figure, self.ax = plt.subplots()
+        
+        # Dodaj canvas
+        self.canvas = FigureCanvasTkAgg(self.figure, root)
+        self.canvas.get_tk_widget().pack()
+
+        # Dodaj toolbar
+        self.toolbar = NavigationToolbar2Tk(self.canvas, root)
+        self.toolbar.update()
+        self.toolbar.pack()
+
+        # Konfiguracja NEAT
+        self.config_file = config_file
+        self.history = []
+
+        # Przechowuje statystyki dla wykresu
+        self.generations = []
+        self.fitness_values = []
+
+        # Flaga do zatrzymania treningu
+        self.training_active = False
+
+        # Uruchamianie NEAT w tle
+        self.start_training()
+
+    def start_training(self):
+        self.training_active = True
+
+        # Uruchomienie treningu w osobnym wątku
+        training_thread = threading.Thread(target=self.run_neat)
+        training_thread.start()
+
+    def run_neat(self):
+        def callback(stats):
+            # Zbieranie statystyk do późniejszej aktualizacji GUI
+            self.generations = list(range(len(stats.most_fit_genomes)))
+            self.fitness_values = [g.fitness for g in stats.most_fit_genomes]
+
+            # Aktualizowanie GUI po każdej generacji
+            self.update_gui()
+
+        # Uruchomienie NEAT z callbackiem
+        run_neat(self.config_file, callback)
+
+    def update_gui(self):
+        # Aktualizacja wykresu
+        self.ax.clear()
+        self.ax.plot(self.generations, self.fitness_values)
+        self.ax.set_title("Fitness w generacjach")
+        self.ax.set_xlabel("Generacja")
+        self.ax.set_ylabel("Fitness")
+        self.ax.grid(True)
+        self.canvas.draw()
+
+        # Aktualizacja listy generacji w listboxie
+        self.generation_listbox.delete(0, tk.END)
+        for i in self.generations:
+            self.generation_listbox.insert(tk.END, f"Generacja {i}")
+
+    def show_game(self):
+        try:
+            # Pobieramy wybraną generację
+            selected_index = self.generation_listbox.curselection()[0]
+            generation_id = int(selected_index)
+
+            # Pobieramy historię gier dla wybranej generacji
+            history = history_all_games.get(generation_id)
+            
+            if history:
+                for state in history:
+                    for i in state:
+                        print(i)
+            else:
+                messagebox.showinfo("Brak danych", f"Brak historii dla generacji {generation_id}")
+        except IndexError:
+            messagebox.showinfo("Błąd", "Wybierz generację z listy.")
 
 if __name__ == "__main__":
-    # Poprawa obsługi ścieżki do pliku konfiguracji
     config_path = os.path.join(os.path.dirname(__file__), "neat-config.txt")
     if not os.path.exists(config_path):
         print(f"Plik konfiguracji {config_path} nie istnieje.")
         exit()
 
-    run_neat(config_path)
+    root = tk.Tk()
+    app = NEATApp(root, config_path)
+    root.mainloop()

@@ -17,13 +17,11 @@ class gra:
 		self.max_number = 0
 
 	def ruch(self, move):
-	
-		if self.map[6][move] != 0:
+		if self.map[6][move] != 0:  # Sprawdza czy kolumna jest pełna
 			self.sprawdz()
 			return None
 
-		def spadanie(lista, data, changes = True):
-			
+		def spadanie(lista, data, changes=True):
 			def fall(list):
 				for col, coli in enumerate(list):
 					for row, num in enumerate(list[col]):
@@ -36,7 +34,7 @@ class gra:
 									list[col][row] = 0
 									break
 				return list
-			
+
 			def fallen(list):
 				for col, coli in enumerate(list):
 					for row, num in enumerate(list[col]):
@@ -45,20 +43,20 @@ class gra:
 								if list[i][row] == 0:
 									return True
 				return False
-			
+
 			for col, coli in enumerate(data):
 				for row, num in enumerate(data[col]):
 					data[col][row] += 1
-			
+
 			while fallen(lista):
-				map = fall(lista)
-			
+				lista = fall(lista)
+
 			if changes:
 				return lista, data
 			else:
 				return lista
-		
-		def lacz(map, data, changes = True):
+
+		def lacz(map, data, changes=True):
 			points = self.points
 			pos = []
 			pos_ = {}
@@ -71,7 +69,9 @@ class gra:
 			_pos = sorted(pos_.keys())
 			for i in _pos:
 				pos.append(pos_[i])
-			
+
+			map_changed = False  # Nowa zmienna, która sprawdza, czy mapa została zmieniona
+
 			for i, poz in enumerate(pos):
 				col = poz[0]
 				row = poz[1]
@@ -82,7 +82,7 @@ class gra:
 					special[1] = True
 				if row == 4:
 					special[2] = True
-				
+
 				if map[col][row] != 0:
 					inc = 0
 					if not special[0]:
@@ -91,46 +91,51 @@ class gra:
 							inc += 1
 							data[col][row] = 0
 							data[col][row - 1] = 999
+							map_changed = True
 					if not special[1]:
 						if map[col][row] == map[col - 1][row]:
 							map[col - 1][row] = 0
 							inc += 1
 							data[col][row] = 0
-							data[col][row] = 999
+							data[col - 1][row] = 999
+							map_changed = True
 					if not special[2]:
 						if map[col][row] == map[col][row + 1]:
 							map[col][row + 1] = 0
 							inc += 1
 							data[col][row] = 0
 							data[col][row + 1] = 999
+							map_changed = True
 					map[col][row] += inc
 					points += 2 ** map[col][row] * inc
-				self.points = points
-				if changes:
-					return map, data
-				else:
-					return map
-				
-			
+			self.points = points
+			if changes:
+				return map, data, map_changed  # Zwraca także, czy mapa została zmieniona
+			else:
+				return map
+
+		# Główna logika ruchu
 		map_ = [[999] * 5 for _ in range(8)]
 		liczba = self.liczba[0]
 		self.liczba[0] = self.liczba[1]
 		self.liczba[1] = random.randint(1 + self.state, 6 + self.state)
 		map = self.map
 		map[7][move] = liczba
-		
+
 		t = 0
 		while True:
 			map, map_ = spadanie(map, map_)
-			map, map_ = lacz(map, map_)
+			map, map_, map_changed = lacz(map, map_)
 			map, map_ = spadanie(map, map_)
-			map, map_ = lacz(map, map_)
-			if str(map) == str(lacz(map, map_, False)) and str(map) == str(spadanie(map, map_, False)):
-					break
+			map, map_, map_changed = lacz(map, map_)
+			if not map_changed:  # Dopóki nie nastąpi żadna zmiana, przerywamy
+				break
+
 		self.sprawdz()
 		self.map = map
 		self.history.append(self.get_ui())
 		self.last_move = move
+
 
 	def sprawdz(self):
 		map = self.map
@@ -322,10 +327,11 @@ class gra:
 		map = self.map
 		points = self.points
 		max_number = self.max_number
+		"""
 		
 		# Nagroda za maksymalną liczbę na planszy
 		reward = 0
-		reward += max_number * 100  # Wzmocniona nagroda za większe liczby
+		reward += 2 ** max_number * 100  # Wzmocniona nagroda za większe liczby
 
 		# Kara za sytuacje, gdy mniejsza liczba jest pod większą
 		penalty = 0
@@ -333,15 +339,61 @@ class gra:
 			for row in range(1, len(map)):  # Sprawdzamy od drugiego rzędu w dół
 				if map[row][col] > 0 and map[row - 1][col] > 0:  # Tylko, jeśli obie liczby są różne od 0
 					if map[row][col] < map[row - 1][col]:  # Mniejsza liczba pod większą
-						penalty += (map[row - 1][col] - map[row][col]) * 10  # Kara zależna od różnicy liczb
+						penalty += (2 ** map[row - 1][col] - 2 ** map[row][col]) * 100  # Kara zależna od różnicy liczb
 		
 		# Nagroda lub kara zależna od liczby punktów (zwiększamy jej znaczenie)
-		reward += points * 10  # Zwiększamy wpływ liczby punktów na końcową nagrodę
+		reward += points * 50  # Zwiększamy wpływ liczby punktów na końcową nagrodę
 		
+		zeros = 0
+		for col in range(len(map[0])):
+			for row in range(len(map)):
+				if map[row][col] == 0:
+					zeros += 1
+		reward += (1.5 ** zeros) * ((len(self.history)) / 100) / 10
+		reward += len(self.history) * 30
+
 		# Kara za przegraną
 		if self.lose:
-			reward -= 1000  # Duża kara za przegraną, by unikać kończenia gry
+			reward /= 50  # Duża kara za przegraną, by unikać kończenia gry
 		
 		# Ostateczny wynik
 		final_reward = reward - penalty
 		return final_reward
+		"""
+
+		
+
+
+		if self.lose:
+			points -= 400
+
+		points *= 1.1 ** self.state
+
+
+
+		"""
+		# Kara za sytuacje, gdy mniejsza liczba jest pod większą, proporcjonalnie do różnicy
+		for col in range(len(map[0])):  # Przechodzimy przez każdą kolumnę
+			for row in range(len(map) - 1):  # Przechodzimy przez każdy wiersz, z wyjątkiem ostatniego
+				if map[row][col] > 0:  # Tylko, jeśli liczba jest różna od 0
+					for check_row in range(row + 1, len(map)):  # Sprawdzamy wszystkie wiersze poniżej
+						if map[check_row][col] > 0 and map[check_row][col] < map[row][col]:  # Mniejsza liczba pod większą
+							difference = map[row][col] - map[check_row][col]  # Obliczamy różnicę
+							proportion = difference / map[row][col]  # Proporcja różnicy w stosunku do większej liczby
+							points *= ( 0.9 ** proportion)  # Kara proporcjonalna do różnicy (10% kary razy proporcja)
+		"""
+
+
+
+		
+
+
+
+
+		if abs(points) != points:
+			points += 2 ** max_number
+		else:
+			points *= max_number
+		
+		ret = points
+		return ret
