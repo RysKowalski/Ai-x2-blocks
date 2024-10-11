@@ -1,6 +1,6 @@
 [NEAT]
-pop_size = 150
-fitness_threshold = 100000000000000
+pop_size = 2
+fitness_threshold = 10000
 reset_on_extinction = False
 fitness_criterion = max
 
@@ -8,15 +8,15 @@ fitness_criterion = max
 [DefaultGenome]
 num_inputs = 42
 num_outputs = 5
-num_hidden = 6
+num_hidden = 0
 initial_connection = full_direct
 
 feed_forward = True
 
 response_init_mean = 1.0
 response_init_stdev = 0.01
-response_max_value = 300000.0
-response_min_value = -300000.0
+response_max_value = 30000.0
+response_min_value = -30000.0
 response_mutate_power = 0.3
 response_mutate_rate = 0.1
 response_replace_rate = 0.04

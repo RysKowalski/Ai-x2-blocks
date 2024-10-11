@@ -67,7 +67,7 @@ def run_neat(config_file):
     population.add_reporter(stats)
     
     # Uruchamiamy NEAT przez 50 pokoleń
-    winner = population.run(eval_genomes, 500)
+    winner = population.run(eval_genomes, 50)
     
     # Zapisz zwycięską sieć
     with open("winner.pkl", "wb") as f:

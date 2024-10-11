@@ -210,7 +210,7 @@ class gra:
 			points = self.points
 			
 
-			os.system('cls')
+			os.system('clear')
 
 
 			print(f'liczba punktów: {points}\n')
@@ -367,7 +367,7 @@ class gra:
 		if self.lose:
 			points -= 400
 
-		points *= 1.1 ** self.state
+		#points *= 1.1 ** self.state
 
 
 
@@ -390,10 +390,25 @@ class gra:
 
 
 
-		if abs(points) != points:
-			points += 2 ** max_number
-		else:
-			points *= max_number
+		#if abs(points) != points:
+		#	points += 2 ** max_number
+		#else:
+		#	points *= max_number
 		
 		ret = points
 		return ret
+
+if __name__ == '__main__':
+    import timeit
+    def test() -> None:
+        for _ in range(100000):
+            s = random.randint(0, 4)
+            t.ruch(s)
+            print(s)
+            
+    
+    
+    t: gra = gra()
+    
+    print(timeit.timeit(setup=test, number=100))
+    
