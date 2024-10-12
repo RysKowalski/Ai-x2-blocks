@@ -1,0 +1,7 @@
+{
+    "editor.wrappingIndent": "same",
+    "editor.find.autoFindInSelection": "always",
+    "editor.insertSpaces": false,
+	"editor.suggest.insertMode": "replace",
+	"editor.detectIndentation": false
+}
