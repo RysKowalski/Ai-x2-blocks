@@ -2,7 +2,7 @@ import neat
 import os
 import pickle
 import yaml  # Dodajemy bibliotekę yaml do zapisu do pliku w formacie YAML
-from gra import gra
+from gra_old import gra
 
 from concurrent.futures import ThreadPoolExecutor
 

@@ -6,7 +6,7 @@ from tkinter import messagebox
 import threading  # Dodajemy threading do obsługi wątków
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from gra import gra
+from gra_old import gra
 import visualize
 
 # Funkcja fitness dla NEAT
