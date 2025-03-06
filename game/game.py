@@ -1,7 +1,7 @@
 from typing import Self
 
 import random
-import os
+import itertools
 
 class Game:
 	def __init__(self: Self, state = None):
@@ -11,7 +11,7 @@ class Game:
 			state (_type_, optional): TODO. Defaults to None.
 		"""
 		self.points: int = 0
-		self.map: list[list[int]] = [[0 for _ in range(5)] for _ in range(7)] # self.map[col][row]
+		self.map: list[list[int]] = [[0 for _ in range(7)] for _ in range(5)] # self.map[col][row]
 		self.number_range: list[int] = [1, 6]
 		self.moves: int = 0
 		self.next_numbers: list[int] = [random.randint(*self.number_range), random.randint(*self.number_range)]
@@ -113,7 +113,7 @@ class Game:
 		"""
 		change: bool = False
 
-		map_columns: list[list[int]] = self.convert_map(self.map)
+		map_columns: list[list[int]] = self.map.copy()
 		
 		column_length: int = len(map_columns[0])
 
@@ -125,7 +125,7 @@ class Game:
 
 			fallen_map_collumns.append(fallen_column)
 		
-		self.map = self.convert_map(fallen_map_collumns)
+		self.map = fallen_map_collumns.copy()
 
 		if map_columns != fallen_map_collumns:
 			change = True
@@ -147,7 +147,7 @@ class Game:
 		Returns:
 			list[bool]: Lista o długości liczby kolumn w self.map. True jeśli ruch jest możliwy (ostatni element w kolumnie == 0), inaczej False.
 		"""
-		last_row = self.map[-1]  # Pobranie ostatniego wiersza planszy
+		last_row = self.convert_map(self.map)[-1]  # Pobranie ostatniego wiersza planszy
 		possible_moves = [cell == 0 for cell in last_row]  # Sprawdzenie, które kolumny są wolne
 		return possible_moves
 	
@@ -223,7 +223,7 @@ class Game:
 		Args:
 			move (int): kolumna ruchu, zakres od 0 do 4
 		"""
-		self.map[len(self.map) - 1][move] = self.next_numbers[0]
+		self.map[move][len(self.map[0]) - 1] = self.next_numbers[0]
 		self.new_next_numbers()
 
 	def set_last_drop(self: Self, move: int) -> None:
@@ -232,9 +232,8 @@ class Game:
 		Args:
 			move (int): ruch, jako kolumna
 		"""
-		row: int = len([x for x in self.convert_map(self.map)[move] if x != 0])
+		row: int = len([x for x in self.map[move] if x != 0])
 		self.last_drop = [move, row - 1]
-		print(self.last_drop)
 
 	def move(self: Self, move: int):
 		"""przyjmue ruh, jako int od 0 do 4, oznaczajce kolumny
@@ -255,12 +254,39 @@ class Game:
 			if self.merge():
 				change = True
 
+	def get_data_ai(self: Self) -> list[int]:
+		"""zwraca listę z mapą oraz następnymi ruchami
+
+		Returns:
+			list[int]: 35 elementów int z mapą, 2 elementy int z następnymi ruchami
+		"""
+		data:list[int] = []
+		
+		data.extend(list(itertools.chain(*self.map)))
+
+		return data
+
+	def reward(self: Self) -> float:
+		"""zwraca nagrodę jako float
+
+		Returns:
+			float: nagroda
+		"""
+		return self.points
+
+	def game_running(self: Self) -> bool:
+		"""jeżeli żaden ruch nie jest dostępny, zwraca False
+
+		Returns:
+			bool: _description_
+		"""
 
 if __name__ == '__main__':
+	import os
 
 	def show_map(game: Game):
 		print()
-		for row in game.map:
+		for row in t.convert_map(game.map):
 			print((row))
 	
 	def set_map(game: Game, new_map: list[list[int]]):
@@ -272,12 +298,10 @@ if __name__ == '__main__':
 	t = Game()
 
 	while True:
-		os.system('clear')
-		print(t.points)
+		print(t.reward())
 		show_map(t)
-		print(t.next_numbers)
-
-		t.move(int(input('podaj liczbę od 1 do 5: ')) - 1)
+		print(f'{t.next_numbers}')
+		t.move(int(input(f'podaj liczbę {t.get_possible_moves()}: ')) - 1)
 
 	new_map: list[list[int]] = [[0, 0, 0, 0, 0],
 								[0, 0, 0, 0, 0],
