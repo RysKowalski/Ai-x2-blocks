@@ -1,6 +1,7 @@
 from typing import Self
 
 import random
+import os
 
 class Game:
 	def __init__(self: Self, state = None):
@@ -71,7 +72,8 @@ class Game:
 
 	def new_next_numbers(self: Self) -> None:
 		"""generuje next_numbers"""
-		self.next_numbers = random.randint(*self.number_range), random.randint(*self.number_range)
+		self.next_numbers.pop(0)
+		self.next_numbers.append(random.randint(*self.number_range))
 	
 	def check_empty_column(self: Self, column: int) -> int:
 		"""przyjmuje mapę oraz kolumnę, i zwraca najniższe puste pole
@@ -103,8 +105,14 @@ class Game:
 		"""
 		return [list(row) for row in zip(*map)]
 	
-	def fall_map(self: Self) -> None:
-		"""generuje mapę po spadnięciu"""
+	def fall_map(self: Self) -> bool:
+		"""generuje mapę po spadnięciu
+
+		Returns:
+			bool: czy wystpiła zmiana
+		"""
+		change: bool = False
+
 		map_columns: list[list[int]] = self.convert_map(self.map)
 		
 		column_length: int = len(map_columns[0])
@@ -119,6 +127,20 @@ class Game:
 		
 		self.map = self.convert_map(fallen_map_collumns)
 
+		if map_columns != fallen_map_collumns:
+			change = True
+		return change
+
+	def update_points(self: Self, merges: int, number: int) -> None:
+		"""przyjmuje ilość udanych połączeń, oraz liczbę po połączeniu
+
+		Args:
+			merges (int): ilość udanych połączeń
+			number (int): liczba po połączeniu
+		"""
+		
+		self.points += (1.5 ** (number - merges)) * merges
+
 	def get_possible_moves(self: Self) -> list[bool]:
 		"""Zwraca listę booli, reprezentujących możliwość wykonania ruchu w kolumnach.
 
@@ -129,8 +151,13 @@ class Game:
 		possible_moves = [cell == 0 for cell in last_row]  # Sprawdzenie, które kolumny są wolne
 		return possible_moves
 	
-	def merge(self: Self) -> None:
-		"""łączy komurki mapy z sąsiadami"""
+	def merge(self: Self) -> bool:
+		"""łączy komurki mapy z sąsiadami
+
+		Returns:
+			bool: czy wystąpiła zmiana
+		"""
+		change: bool = False
 
 		for _ in [False]:
 
@@ -145,6 +172,7 @@ class Game:
 
 			if avalible_merges[0]:
 				succeed += self.merge_two_cells((column_i, row_i), (column_i, row_i + 1), succeed)
+
 			
 			if avalible_merges[1]:
 				succeed += self.merge_two_cells((column_i, row_i), (column_i, row_i - 1), succeed)
@@ -154,6 +182,11 @@ class Game:
 			
 			if avalible_merges[3]:
 				self.merge_two_cells((column_i, row_i), (column_i - 1, row_i), succeed)
+			
+			self.update_points(succeed, self.map[column_i][row_i])
+
+			if succeed > 0:
+				change = True
 
 
 		for column_i, column in enumerate(self.map):
@@ -176,16 +209,58 @@ class Game:
 				
 				if avalible_merges[3]:
 					self.merge_two_cells((column_i, row_i), (column_i - 1, row_i), succeed)
+				
+				self.update_points(succeed, self.map[column_i][row_i])
+
+				if succeed > 0:
+					change = True
+		
+		return change
+
+	def spawn_element(self: Self, move: int) -> None:
+		"""spawnuje element na mapie w kolumnie move, oraz aktualizuje next_numbers
+
+		Args:
+			move (int): kolumna ruchu, zakres od 0 do 4
+		"""
+		self.map[len(self.map) - 1][move] = self.next_numbers[0]
+		self.new_next_numbers()
+
+	def set_last_drop(self: Self, move: int) -> None:
+		"""przyjmuje move, i ustawia self.last_drop na najniższą wolną pozycję w kolumnie move
+
+		Args:
+			move (int): ruch, jako kolumna
+		"""
+		row: int = len([x for x in self.convert_map(self.map)[move] if x != 0])
+		self.last_drop = [move, row - 1]
+		print(self.last_drop)
 
 	def move(self: Self, move: int):
-		...
+		"""przyjmue ruh, jako int od 0 do 4, oznaczajce kolumny
+
+		Args:
+			move (int): kolumna ruchu, zakres od 0 do 4
+		"""
+		self.spawn_element(move)
+		self.set_last_drop(move)
+		
+		change: bool = True
+
+		while change:
+			change = False
+			if self.fall_map():
+				change = True
+			
+			if self.merge():
+				change = True
 
 
 if __name__ == '__main__':
 
 	def show_map(game: Game):
 		print()
-		for row in reversed(game.map):
+		for row in game.map:
 			print((row))
 	
 	def set_map(game: Game, new_map: list[list[int]]):
@@ -196,21 +271,13 @@ if __name__ == '__main__':
 
 	t = Game()
 
-	new_map: list[list[int]] = [[0, 0, 0, 0, 0],
-								[0, 0, 0, 0, 0],
-								[0, 0, 0, 0, 0],
-								[0, 0, 0, 0, 0],
-								[0, 0, 0, 0, 0],
-								[0, 0, 2, 0, 2],
-								[0, 0, 1, 2, 1]]
-	
-	set_map(t, new_map)
+	while True:
+		os.system('clear')
+		print(t.points)
+		show_map(t)
+		print(t.next_numbers)
 
-	show_map(t)
-
-	t.fall_map()
-
-	show_map(t)
+		t.move(int(input('podaj liczbę od 1 do 5: ')) - 1)
 
 	new_map: list[list[int]] = [[0, 0, 0, 0, 0],
 								[0, 0, 0, 0, 0],
@@ -219,15 +286,3 @@ if __name__ == '__main__':
 								[0, 0, 0, 2, 0],
 								[0, 0, 0, 0, 0],
 								[0, 0, 0, 0, 0]]
-	t.last_drop = [1, 3]
-	set_map(t, new_map)
-	
-	show_map(t)
-
-	t.fall_map()
-
-	show_map(t)
-
-	t.merge()
-
-	show_map(t)
