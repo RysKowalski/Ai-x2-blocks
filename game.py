@@ -280,6 +280,7 @@ class Game:
 		Returns:
 			bool: _description_
 		"""
+		return any(self.get_possible_moves())
 
 if __name__ == '__main__':
 	import os
@@ -293,7 +294,6 @@ if __name__ == '__main__':
 		for row_i, row in enumerate(reversed(new_map)):  # Usuń reversed
 			for col_i, col in enumerate(row):
 				game.map[row_i][col_i] += col  # Indeksy w game.map to row_i, col_i
-
 
 	t = Game()
 
