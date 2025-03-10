@@ -139,7 +139,7 @@ class Game:
 			number (int): liczba po połączeniu
 		"""
 		
-		self.points += (1.5 ** (number - merges)) * merges
+		self.points += number * merges
 
 	def get_possible_moves(self: Self) -> list[bool]:
 		"""Zwraca listę booli, reprezentujących możliwość wykonania ruchu w kolumnach.
@@ -148,7 +148,7 @@ class Game:
 			list[bool]: Lista o długości liczby kolumn w self.map. True jeśli ruch jest możliwy (ostatni element w kolumnie == 0), inaczej False.
 		"""
 		last_row = self.convert_map(self.map)[-1]  # Pobranie ostatniego wiersza planszy
-		possible_moves = [cell == 0 for cell in last_row]  # Sprawdzenie, które kolumny są wolne
+		possible_moves = [int(cell == 0) for cell in last_row]  # Sprawdzenie, które kolumny są wolne
 		return possible_moves
 	
 	def merge(self: Self) -> bool:
@@ -242,11 +242,11 @@ class Game:
 			move (int): kolumna ruchu, zakres od 0 do 4
 		"""
 		self.spawn_element(move)
-		self.set_last_drop(move)
 		
 		change: bool = True
 
 		while change:
+			self.set_last_drop(move)
 			change = False
 			if self.fall_map():
 				change = True
@@ -284,6 +284,7 @@ class Game:
 
 if __name__ == '__main__':
 	import os
+	import requests
 
 	def show_map(game: Game):
 		print()
@@ -295,13 +296,27 @@ if __name__ == '__main__':
 			for col_i, col in enumerate(row):
 				game.map[row_i][col_i] += col  # Indeksy w game.map to row_i, col_i
 
-	t = Game()
+	def update_ui(points: int, i: int):
+		requests.post('http://localhost:8000/points', json={'points': [i, points]})
 
+	# t = Game()
+
+	# while True:
+	# 	print(t.reward())
+	# 	show_map(t)
+	# 	print(f'{t.next_numbers}')
+	# 	t.move(int(input(f'podaj liczbę {t.get_possible_moves()}: ')) - 1)
+	i: int = 0
 	while True:
-		print(t.reward())
-		show_map(t)
-		print(f'{t.next_numbers}')
-		t.move(int(input(f'podaj liczbę {t.get_possible_moves()}: ')) - 1)
+		game: Game = Game()
+
+		i += 1
+		j = 0
+		while game.game_running():
+			j += 1
+			game.move(random.randint(0, 4))
+			update_ui(game.points + i, j )
+		
 
 	new_map: list[list[int]] = [[0, 0, 0, 0, 0],
 								[0, 0, 0, 0, 0],

@@ -20,11 +20,11 @@ class State:
 state: State = State()
 
 app: FastAPI = FastAPI()
-app.mount("/nauka_web", StaticFiles(directory=os.path.join('public')))
+app.mount("/t", StaticFiles(directory=os.path.join('public')))
 
 @app.get('/')
 def index():
-    return FileResponse(path='index/index.html')
+    return FileResponse(path='public/index/index.html')
 
 @app.post('/points')
 def points(data: dict[str, list[int]]):
