@@ -5,7 +5,7 @@ from typing import Any, List, Tuple
 
 from game import Game
 
-def filtruj_i_znajdz_index(lista1: list[float], lista2: list[bool]) -> int:
+def filtruj_i_znajdz_index(lista1: list[float], lista2: list[int]) -> int:
     """
     Filtruje listę lista1, znajdując indeks największej wartości,
     dla której odpowiadający element w lista2 jest True.
@@ -16,7 +16,7 @@ def filtruj_i_znajdz_index(lista1: list[float], lista2: list[bool]) -> int:
 number = 0
 def visualize(points: float) -> None:
     """
-    Funkcja wizualizująca wynik – przyjmuje liczbę punktów najlepszego genomu.
+    Funkcja wizualizująca wynik - przyjmuje liczbę punktów najlepszego genomu.
     """
     global number
     number += 1

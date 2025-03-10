@@ -1,21 +1,24 @@
 import os
+import gc
+import io
+import matplotlib
+import matplotlib.pyplot as plt
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
 
-import matplotlib.pyplot as plt
-import io
-import asyncio
-
 from typing import Self
+
+# Użycie bezpieczniejszego backendu dla matplotlib
+matplotlib.use('Agg')
 
 class State:
     def __init__(self: Self):
         self.points: list[tuple[int, int]] = []
+
     def add_points(self: Self, new_points: tuple[int, int]):
         self.points.append(new_points)
-
 
 state: State = State()
 
@@ -28,8 +31,9 @@ def index():
 
 @app.post('/points')
 def points(data: dict[str, list[int]]):
-    state.add_points(tuple(data['points']))
-    return 200
+    new_points: tuple[int, int] = data['points'][0], data['points'][1]
+    state.add_points(new_points)
+    return {"status": "ok"}
 
 @app.get('/get_points')
 async def get_points():
@@ -37,14 +41,14 @@ async def get_points():
 
 @app.get("/plot")
 def plot_points():
-    """Generuje nowy wykres na każde żądanie"""
+    """Generuje nowy wykres na każde żądanie i czyści pamięć"""
+    plt.close('all')  # Zamknięcie wszystkich otwartych wykresów przed stworzeniem nowego
     fig, ax = plt.subplots()
 
     if state.points:
         x_vals, y_vals = zip(*state.points)
         ax.scatter(x_vals, y_vals)
 
-        # Dynamiczne ustawienie zakresów osi
         ax.set_xlim(min(x_vals) - 10, max(x_vals) + 10)
         ax.set_ylim(min(y_vals) - 10, max(y_vals) + 10)
     else:
@@ -57,6 +61,8 @@ def plot_points():
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     plt.close(fig)
+
     buf.seek(0)
 
-    return StreamingResponse(buf, media_type="image/png")
+    # StreamingResponse automatycznie zamknie buf po przesłaniu danych
+    return StreamingResponse(buf, media_type="image/png", headers={"Connection": "close"})
