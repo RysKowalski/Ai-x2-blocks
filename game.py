@@ -298,7 +298,9 @@ if __name__ == '__main__':
 				game.map[row_i][col_i] += col  # Indeksy w game.map to row_i, col_i
 
 	def update_ui(points: int, i: int):
-		requests.post('http://localhost:8000/points', json={'points': [i, points]})
+		# requests.post('http://localhost:8000/points', json={'points': [i, points]})
+		print(points, i)
+		exit()
 
 	# t = Game()
 

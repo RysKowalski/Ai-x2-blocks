@@ -18,7 +18,7 @@ def visualize(points: float) -> None:
     """
     Funkcja wizualizująca wynik – przyjmuje liczbę punktów najlepszego genomu.
     """
-    global numberj
+    global number
     number += 1
     requests.post('http://localhost:8000/points', json={'points': [number, points]})
 
