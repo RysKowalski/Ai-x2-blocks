@@ -263,6 +263,7 @@ class Game:
 		data:list[int] = []
 		
 		data.extend(list(itertools.chain(*self.map)))
+		data.extend(self.next_numbers)
 
 		return data
 
