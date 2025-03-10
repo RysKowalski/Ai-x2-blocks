@@ -18,16 +18,26 @@ config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
 net = neat.nn.FeedForwardNetwork.create(winner, config)
 
 # Inicjalizacja gry
-game: Game = Game()
+points: list[float] = []
+levels: list[int] = []
 
-while game.game_running():
-    # Pobranie danych wejściowych dla modelu
-    inputs = game.get_data_ai()
-    
-    # Przekazanie danych do sieci neuronowej i pobranie wyjść
-    outputs = net.activate(inputs)
-    
-    game.process_ai_input(outputs, True)
+for _ in range(100):
+	game: Game = Game()
 
-    # Możesz dodać wyświetlanie mapy lub wyników, jeśli chcesz obserwować postęp
-    print(f"Score: {game.points}")
+	while game.game_running():
+		# Pobranie danych wejściowych dla modelu
+		inputs = game.get_data_ai()
+		
+		# Przekazanie danych do sieci neuronowej i pobranie wyjść
+		outputs = net.activate(inputs)
+		
+		game.process_ai_input(outputs, False)
+
+		# Możesz dodać wyświetlanie mapy lub wyników, jeśli chcesz obserwować postęp
+	print(f"Score: {game.points}")
+	print(f'{game.level}')
+	points.append(game.points)
+	levels.append(game.level)
+
+print(f'średnia punktów: {sum(points) / len(points)}')
+print(f'średnia poziomów: {sum(levels) / len(levels)}')
