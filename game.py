@@ -18,6 +18,7 @@ class Game:
 		self.last_drop: list[int] = [0, 0]
 		self.last_move: int = 0
 		self.level: int = 0
+		self.game_over: bool = False
 
 	def show_map(self: Self):
 		print()
@@ -274,17 +275,32 @@ class Game:
 		self.level += difference
 		self.points += 100 * difference
 
+	def check_move_limit(self: Self) -> None:
+		"""sprawdza, czy zostało wykonane 1000 ruchów, jeżeli tak, to kończy grę i przydziela -100 punktów za każdy element nie będący zerem"""
+
+		if self.moves < 1000:
+			return
+		
+		for i in self.map:
+			for j in i:
+				if j != 0:
+					self.points -= 100
+		
+		self.game_over = True
+
 	def move(self: Self, move: int):
 		"""przyjmue ruh, jako int od 0 do 4, oznaczajce kolumny
 
 		Args:
 			move (int): kolumna ruchu, zakres od 0 do 4
 		"""
+		self.moves += 1
 		self.last_move = move
 		self.spawn_element()
 		self.merge_fall_loop()
 		self.check_game_level()
 		self.merge_fall_loop()
+		self.check_move_limit()
 
 	def get_data_ai(self: Self) -> list[int]:
 		"""zwraca listę z mapą oraz następnymi ruchami
@@ -308,12 +324,35 @@ class Game:
 		return self.points
 
 	def game_running(self: Self) -> bool:
-		"""jeżeli żaden ruch nie jest dostępny, zwraca False
-
+		"""Zwraca True, jeżeli gra działa, i False, jeżeli gra skończyła się z dowolnego powodu.
+		
+		Jeśli gra skończyła się z przyczyny innej niż przekroczenie limitu ruchów 
+		(czyli self.game_over jest False), to dla każdego niezerowego elementu mapy odejmuje 200 od self.points.
+		
 		Returns:
-			bool: _description_
+			bool: True jeśli gra trwa, False w przeciwnym razie.
 		"""
-		return any(self.get_possible_moves())
+		running: bool = any(self.get_possible_moves())
+
+		if not running:
+			self.points -= 5 * (1000 - self.moves)
+			for i in self.map:
+				for j in i:
+					if j != 0:
+						self.points -= 200
+			return False
+		
+		if self.game_over:
+			self.points += 1000
+
+			for i in self.map:
+				for j in i:
+					if j != 0:
+						self.points -= 200
+			
+			return False
+		
+		return True
 	
 	def process_ai_input(self: Self, input: list[float], human: bool) -> None:
 		"""przyjmuje dane, które zwrócił model, jako lista wartości dla opcji
@@ -349,6 +388,7 @@ if __name__ == '__main__':
 	t = Game()
 
 	while True:
+		os.system('clear')
 		print(t.reward())
 		show_map(t)
 		print(f'{t.next_numbers}')
@@ -363,12 +403,3 @@ if __name__ == '__main__':
 	# 		j += 1
 	# 		game.move(random.randint(0, 4))
 	# 		update_ui(game.points + i, j )
-		
-
-	new_map: list[list[int]] = [[0, 0, 0, 0, 0],
-								[0, 0, 0, 0, 0],
-								[0, 0, 0, 0, 0],
-								[0, 0, 0, 0, 0],
-								[0, 0, 0, 2, 0],
-								[0, 0, 0, 0, 0],
-								[0, 0, 0, 0, 0]]
