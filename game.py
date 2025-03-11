@@ -327,6 +327,7 @@ class Game:
 		"""Zwraca True, jeżeli gra działa, i False, jeżeli gra skończyła się z dowolnego powodu.
 		
 		Jeśli gra skończyła się z przyczyny innej niż przekroczenie limitu ruchów 
+			self.points += 1000
 		(czyli self.game_over jest False), to dla każdego niezerowego elementu mapy odejmuje 200 od self.points.
 		
 		Returns:
