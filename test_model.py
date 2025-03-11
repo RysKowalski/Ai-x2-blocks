@@ -5,8 +5,8 @@ import random
 from game import Game
 
 # Wczytanie modelu NEAT
-with open("best_genome.pkl", "rb") as f:
-    winner = pickle.load(f)
+with open("population.pkl", "rb") as f:
+    winner = pickle.load(f)['best_genome']
 
 # Załadowanie konfiguracji NEAT (upewnij się, że masz plik konfiguracyjny)
 config_path = "config"

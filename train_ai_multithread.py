@@ -8,48 +8,53 @@ from concurrent.futures import ProcessPoolExecutor
 
 from game import Game
 
-
 def save_population(pop: neat.Population, best_genome: neat.DefaultGenome, filename: str = "population.pkl") -> None:
-    """
-    Zapisuje całą populację NEAT oraz najlepszy genom do pliku.
-    
-    Przed zapisaniem usuwa reporterów, aby uniknąć problemów z serializacją.
-    
-    :param pop: Obiekt populacji NEAT.
-    :param best_genome: Najlepszy genom uzyskany w trakcie ewolucji.
-    :param filename: Nazwa pliku, do którego zapisywane są dane.
-    """
-    data = {"population": pop, "best_genome": best_genome}
-    with open(filename, "wb") as f:
-        pickle.dump(data, f)
+	"""
+	Zapisuje całą populację NEAT oraz najlepszy genom do pliku.
+
+	Przed zapisaniem usuwa reporterów, aby uniknąć problemów z serializacją.
+
+	:param pop: Obiekt populacji NEAT.
+	:param best_genome: Najlepszy genom uzyskany w trakcie ewolucji.
+	:param filename: Nazwa pliku, do którego zapisywane są dane.
+	"""
+	global number
+	data = {"population": pop, "best_genome": best_genome, 'gen': number}
+	with open(filename, "wb") as f:
+		pickle.dump(data, f)
 
 def load_population(new: bool = False, config_file: str = "config", filename: str = "population.pkl") -> Tuple[neat.Population, Optional[neat.DefaultGenome], neat.Config]:
-    """
-    Ładuje populację NEAT oraz najlepszy genom z pliku, lub tworzy nową populację jeśli new jest True.
-    
-    :param new: Jeśli True, tworzy nową populację; jeśli False, ładuje populację z pliku.
-    :param config_file: Ścieżka do pliku konfiguracyjnego NEAT.
-    :param filename: Nazwa pliku, z którego wczytywane są dane.
-    :return: Krotka zawierająca populację, najlepszy genom (lub None przy nowej populacji) oraz konfigurację.
-    """
-    if new:
-        config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                             neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                             config_file)
-        pop = neat.Population(config)
-        best_genome = None
-    else:
-        with open(filename, "rb") as f:
-            data = pickle.load(f)
-        pop = data["population"]
-        best_genome = data["best_genome"]
-        config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                             neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                             config_file)
-        pop.add_reporter(neat.StdOutReporter(True))
-        stats = neat.StatisticsReporter()
-        pop.add_reporter(stats)
-    return pop, best_genome, config
+	"""
+	Ładuje populację NEAT oraz najlepszy genom z pliku, lub tworzy nową populację jeśli new jest True.
+
+	:param new: Jeśli True, tworzy nową populację; jeśli False, ładuje populację z pliku.
+	:param config_file: Ścieżka do pliku konfiguracyjnego NEAT.
+	:param filename: Nazwa pliku, z którego wczytywane są dane.
+	:return: Krotka zawierająca populację, najlepszy genom (lub None przy nowej populacji) oraz konfigurację.
+	"""
+	global number
+	if new:
+		config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+							 neat.DefaultSpeciesSet, neat.DefaultStagnation,
+							 config_file)
+		pop = neat.Population(config)
+		pop.add_reporter(neat.StdOutReporter(True))
+		stats = neat.StatisticsReporter()
+		pop.add_reporter(stats)
+		best_genome = None
+	else:
+		with open(filename, "rb") as f:
+			data = pickle.load(f)
+		pop = data["population"]
+		best_genome = data["best_genome"]
+		number = data['gen']
+		config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+							 neat.DefaultSpeciesSet, neat.DefaultStagnation,
+							 config_file)
+		# pop.add_reporter(neat.StdOutReporter(True))
+		# stats = neat.StatisticsReporter()
+		# pop.add_reporter(stats)
+	return pop, best_genome, config
 
 def filtruj_i_znajdz_index(lista1: List[float], lista2: List[int]) -> int:
 	"""
@@ -148,26 +153,20 @@ def eval_genomes(genomes: List[Tuple[int, neat.DefaultGenome]], config: neat.Con
 	visualize(best_fitness)
 
 
-
 def run_neat(config_file: str, new: bool = False) -> None:
-    """
-    Inicjalizuje konfigurację NEAT, tworzy lub ładuje populację,
-    dodaje reportery do śledzenia postępu treningu, uruchamia ewolucję 
-    oraz zapisuje populację wraz z najlepszym genomem.
-    
-    :param config_file: Ścieżka do pliku konfiguracyjnego NEAT.
-    :param new: Jeśli True, tworzy nową populację; jeśli False, ładuje populację z pliku 'population.pkl'.
-    """
-    pop, _, config = load_population(new=new, config_file=config_file)
-    
-    # Dodanie reporterów, aby widzieć postęp treningu
-    pop.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    pop.add_reporter(stats)
-    
-    best_genome = pop.run(eval_genomes, 30)
-    
-    save_population(pop, best_genome, "population.pkl")
+	"""
+	Inicjalizuje konfigurację NEAT, tworzy lub ładuje populację,
+	dodaje reportery do śledzenia postępu treningu, uruchamia ewolucję 
+	oraz zapisuje populację wraz z najlepszym genomem.
+	
+	:param config_file: Ścieżka do pliku konfiguracyjnego NEAT.
+	:param new: Jeśli True, tworzy nową populację; jeśli False, ładuje populację z pliku 'population.pkl'.
+	"""
+	pop, _, config = load_population(new=new, config_file=config_file)
+	
+	best_genome = pop.run(eval_genomes, 5)
+	
+	save_population(pop, best_genome, "population.pkl")
 
 if __name__ == "__main__":
 	run_neat("config", False)
