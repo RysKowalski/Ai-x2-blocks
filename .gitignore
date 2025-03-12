@@ -1,4 +1,5 @@
 population.pkl
 train_ai.py
 best_genome.gv.svg
-__pycache__/
+__pycache__/ 
+best_genome.gv
