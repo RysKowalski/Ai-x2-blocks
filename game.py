@@ -336,7 +336,8 @@ class Game:
 		running: bool = any(self.get_possible_moves())
 
 		if not running:
-			self.points -= 5 * (1000 - self.moves)
+			self.points -= 1000
+			self.points -= 10 * (1000 - self.moves)
 			for i in self.map:
 				for j in i:
 					if j != 0:
@@ -344,7 +345,7 @@ class Game:
 			return False
 		
 		if self.game_over:
-			self.points += 1000
+			self.points += 1500
 
 			for i in self.map:
 				for j in i:
@@ -392,7 +393,7 @@ if __name__ == '__main__':
 		os.system('clear')
 		print(t.reward())
 		show_map(t)
-		print(f'{t.next_numbers}')
+		print(f'{t.next_numbers}') # ZMIENIĆ OPERATORA
 		t.move(int(input(f'podaj liczbę {t.get_possible_moves()}: ')) - 1)
 	# i: int = 0
 	# while True:

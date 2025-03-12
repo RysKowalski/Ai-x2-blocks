@@ -6,23 +6,23 @@
 fitness_criterion     = max
 fitness_threshold     = 3500
 no_fitness_termination = True
-pop_size              = 750
+pop_size              = 1000
 reset_on_extinction   = False
 
 [DefaultGenome]
 num_inputs              = 37
 num_hidden              = 0
 num_outputs             = 5
-initial_connection      = partial_direct 0.5
+initial_connection      = full
 feed_forward            = True
 compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient   = 0.6
-conn_add_prob           = 0.1
-conn_delete_prob        = 0.1
-node_add_prob           = 0.03
-node_delete_prob        = 0.02
-activation_default      = sigmoid
-activation_options      = sigmoid
+conn_add_prob           = 0.4
+conn_delete_prob        = 0.2
+node_add_prob           = 0.1
+node_delete_prob        = 0.05
+activation_default      = random
+activation_options      = random
 activation_mutate_rate  = 0.1
 aggregation_default     = sum
 aggregation_options     = sum
@@ -30,14 +30,14 @@ aggregation_mutate_rate = 0.1
 bias_init_mean          = 0.0
 bias_init_stdev         = 1.0
 bias_replace_rate       = 0.1
-bias_mutate_rate        = 0.6
-bias_mutate_power       = 0.5
+bias_mutate_rate        = 0.8
+bias_mutate_power       = 0.6
 bias_max_value          = 30.0
 bias_min_value          = -30.0
 response_init_mean      = 1.0
 response_init_stdev     = 0.1
 response_replace_rate   = 0.1
-response_mutate_rate    = 0.1
+response_mutate_rate    = 0.3
 response_mutate_power   = 0.1
 response_max_value      = 300.0
 response_min_value      = -300.0
@@ -50,17 +50,17 @@ weight_mutate_rate      = 0.8
 weight_replace_rate     = 0.1
 weight_mutate_power     = 0.5
 enabled_default         = True
-enabled_mutate_rate     = 0.01
+enabled_mutate_rate     = 0.02
 
 [DefaultSpeciesSet]
-compatibility_threshold = 30
+compatibility_threshold = 3
 
 [DefaultStagnation]
-species_fitness_func = mean
-max_stagnation  = 20
+species_fitness_func = max
+max_stagnation  = 30
 species_elitism = 5
 
 [DefaultReproduction]
 elitism            = 5
-survival_threshold = 0.3
+survival_threshold = 0.4
 
