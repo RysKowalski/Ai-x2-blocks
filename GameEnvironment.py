@@ -1,8 +1,7 @@
 from typing import Any, SupportsFloat
 
-from gymnasium.core import ActType, ObsType
-import numpy as np
 import gymnasium as gym
+import numpy as np
 
 
 class GameEnv(gym.Env):
