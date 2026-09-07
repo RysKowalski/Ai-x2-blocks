@@ -19,10 +19,10 @@ class GameEnv(gym.Env):
         )
         self.action_space = gym.spaces.Discrete(5)
 
-    def _get_obs(self) -> dict:
+    def _get_obs(self) -> dict[str, np.ndarray]:
         return {"moves": self.next, "map": self.map}
 
-    def _get_info(self) -> dict:
+    def _get_info(self) -> dict[str, int]:
         return {"game_level": self.game_level, "move_count": self.move_count}
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
@@ -35,20 +35,36 @@ class GameEnv(gym.Env):
 
         return self._get_obs(), self._get_info()
 
-    def step(self, action) -> tuple[object, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(
+        self, action
+    ) -> tuple[dict[str, np.ndarray], SupportsFloat, bool, bool, dict[str, int]]:
+        reward = 0
 
-        terminated = False
         if self.map[action, 6] == 0 or self.map[action, 6] == self.next[0]:
+            self.move_count += 1
+            reward = 0.01
+
             self.map[action, 0] = self.next[0]
-            self.next[0] = self.next[1]
-            self.next[1] = self.np_random.integers(1, 6, dtype=np.int32)
+
             pass  # TODO: move logic
         else:
-            terminated = True
+            reward = -0.1
 
-        reward = 0
         truncated = False
-        return self._get_obs(), reward, terminated, truncated, self._get_info()
+        return (
+            self._get_obs(),
+            reward,
+            self.detect_termination(),
+            truncated,
+            self._get_info(),
+        )
+
+    def new_next(self) -> None:
+        self.next[0] = self.next[1]
+        self.next[1] = self.np_random.integers(1, 6, dtype=np.int32)
+
+    def detect_termination(self) -> bool:
+        return not any([self.map[i, 6] == 0 or self.next[0] for i in range(5)])
 
 
 if __name__ == "__main__":
