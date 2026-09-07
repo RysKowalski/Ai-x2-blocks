@@ -39,6 +39,9 @@ class GameEnv(gym.Env):
 
         terminated = False
         if self.map[action, 6] == 0 or self.map[action, 6] == self.next[0]:
+            self.map[action, 0] = self.next[0]
+            self.next[0] = self.next[1]
+            self.next[1] = self.np_random.integers(1, 6, dtype=np.int32)
             pass  # TODO: move logic
         else:
             terminated = True
