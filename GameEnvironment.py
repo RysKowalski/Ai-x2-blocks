@@ -70,20 +70,26 @@ class GameEnv(gym.Env):
         self.next[1] = self.np_random.integers(1, 6, dtype=np.int32)
 
     def fall_move_loop(self) -> None:
-        fallen: bool = True
         merged: bool = True
-        while fallen or merged:
-            fallen = self.fall()
+
+        while merged:
+            self.fall()
             merged = self.merge()
 
-    def fall(self) -> bool:
-        return False
+    def fall(self) -> None:
+        for col in range(self.map.shape[0]):
+            values: np.ndarray = self.map[col][self.map[col] != 0]
+            self.map[col].fill(0)
+            self.map[col, : len(values)] = values
 
     def merge(self) -> bool:
+        # przez wszystkie elementy policzyć ile można połączyć
+        # jeżeli jest więcej niż 1 max, priorytezować
+        # kolumnę ostztbiego ruchu
         return False
 
     def detect_termination(self) -> bool:
-        return not any([self.map[i, 6] == 0 or self.next[0] for i in range(5)])
+        return not any(self.map[i, 6] == 0 or self.next[0] for i in range(5))
 
 
 if __name__ == "__main__":

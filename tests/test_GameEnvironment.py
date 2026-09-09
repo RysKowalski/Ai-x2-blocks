@@ -57,6 +57,7 @@ def test_step_falls_block() -> None:
 
     env.step(0)
 
+    print(env.map)
     assert np.array_equal(
         env.map,
         np.array(
@@ -79,6 +80,7 @@ def test_step_merge_on_top() -> None:
     env.step(0)
     env.step(0)
 
+    print(env.map)
     assert np.array_equal(
         env.map,
         np.array(
