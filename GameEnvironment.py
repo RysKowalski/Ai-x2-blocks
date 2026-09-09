@@ -40,13 +40,19 @@ class GameEnv(gym.Env):
     ) -> tuple[dict[str, np.ndarray], SupportsFloat, bool, bool, dict[str, int]]:
         reward = 0
 
-        if self.map[action, 6] == 0 or self.map[action, 6] == self.next[0]:
+        canMergeOnTop: bool = self.map[action, 6] == self.next[0]
+        if self.map[action, 6] == 0 or canMergeOnTop:
             self.move_count += 1
             reward = 0.01
 
-            self.map[action, 0] = self.next[0]
+            if canMergeOnTop:
+                self.map[action, 6] = self.next[0] + 1
+            else:
+                self.map[action, 0] = self.next[0]
 
-            pass  # TODO: move logic
+            self.new_next()
+
+            self.fall_move_loop()
         else:
             reward = -0.1
 
@@ -62,6 +68,19 @@ class GameEnv(gym.Env):
     def new_next(self) -> None:
         self.next[0] = self.next[1]
         self.next[1] = self.np_random.integers(1, 6, dtype=np.int32)
+
+    def fall_move_loop(self) -> None:
+        fallen: bool = True
+        merged: bool = True
+        while fallen or merged:
+            fallen = self.fall()
+            merged = self.merge()
+
+    def fall(self) -> bool:
+        return False
+
+    def merge(self) -> bool:
+        return False
 
     def detect_termination(self) -> bool:
         return not any([self.map[i, 6] == 0 or self.next[0] for i in range(5)])
