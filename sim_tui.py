@@ -3,6 +3,8 @@ from GameEnvironment import GameEnv
 
 def run_tui(env: GameEnv) -> None:
     _, _ = env.reset()
+    terminated = False
+    truncated = False
 
     while True:
         print("\033[2J\033[H", end="")

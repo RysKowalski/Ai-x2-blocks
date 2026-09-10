@@ -12,10 +12,10 @@ maze = np.array(
         [1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
         [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
         [1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
-        [1, 0, 1, 0, 0, 0, 0, 0, 1, 1],
+        [1, 0, 1, 0, 1, 0, 0, 0, 1, 1],
         [1, 0, 1, 0, 1, 1, 1, 0, 1, 1],
-        [1, 0, 0, 0, 1, 0, 1, 1, 1, 1],
-        [1, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1, 0, 1, 0, 1, 1],
+        [1, 0, 1, 0, 0, 0, 0, 0, 1, 1],
         [1, 0, 0, 0, 0, 0, 1, 1, 0, 0],
     ]
 )
@@ -28,9 +28,9 @@ alpha = 0.1
 gamma = 0.9
 epsilon = 0.5
 
-reward_fire = -10
-reward_goal = 50
-reward_step = 1
+reward_fire = -0.5
+reward_goal = 100
+reward_step = -1
 
 actions = [(0, -1), (0, 1), (-1, 0), (1, 0)]
 
@@ -43,7 +43,7 @@ def is_valid(pos):
         return False
     if c < 0 or c >= maze.shape[1]:
         return False
-    if maze[r, c] == 1:
+    if maze[r, c] == 0:
         return False
     return True
 

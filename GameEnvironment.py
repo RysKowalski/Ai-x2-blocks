@@ -48,7 +48,7 @@ class GameEnv(gym.Env):
             if canMergeOnTop:
                 self.map[action, 6] = self.next[0] + 1
             else:
-                self.map[action, 0] = self.next[0]
+                self.map[action, 6] = self.next[0]
 
             self.new_next()
 
