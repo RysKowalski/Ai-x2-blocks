@@ -24,7 +24,7 @@ class GameEnv(gym.Env):
         self.action_space: gym.Space = gym.spaces.Discrete(5)
 
     def _get_obs(self) -> np.ndarray:
-        return np.concatenate([self.next, self.map.ravel()])
+        return np.concatenate([self.next, self.map.flatten()]).reshape(1, -1)
 
     def _get_info(self) -> dict[str, int]:
         return {"game_level": self.game_level, "move_count": self.move_count}
@@ -136,8 +136,6 @@ class GameEnv(gym.Env):
         return False
 
     def merge_single(self, pos: tuple[int, int]) -> None:
-        print(pos)
-        print(self._map_merges)
         amount: int = 0
         c = self.map[pos]
         if pos[0] > 0:

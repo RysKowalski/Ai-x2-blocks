@@ -21,9 +21,10 @@ print("Action Size:", action_size)
 
 model: Sequential = Sequential(
     [
-        tf.keras.Input((state_size,)),
-        Dense(state_size),
-        Dense(action_size, activation="linear"),
+        tf.keras.Input((37,)),
+        Dense(32, activation="relu"),
+        Dense(32, activation="relu"),
+        Dense(5),
     ]
 )
 
@@ -33,12 +34,13 @@ gamma = 0.95
 epsilon = 1.0
 epsilon_decay = 0.99
 epsilon_min = 0.01
-episodes = 50
+episodes = 100
 
 for episode in range(episodes):
     state, _ = env.reset()
 
     done = False
+    total_reward: float = 0
 
     while not done:
         if np.random.rand() < epsilon:
@@ -48,14 +50,16 @@ for episode in range(episodes):
 
         next_state, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
-
-        next_state = next_state.reshape(1, state_size)
+        total_reward += reward
 
         target = reward
         if not done:
             target += gamma * np.max(model.predict(next_state, verbose=0))
 
-        q_values = model.predict(state, verbose=0)
+        q_values = model.predict(
+            state,
+            verbose=0,
+        )
         q_values[0][action] = target
 
         model.fit(state, q_values, epochs=1, verbose=0)
@@ -63,10 +67,11 @@ for episode in range(episodes):
 
     epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
-    print(f"Episode {episode + 1} completed")
+    print(
+        f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}"
+    )
 
 state, _ = env.reset()
-state = state.reshape(1, state_size)
 
 done = False
 total_reward = 0
@@ -77,7 +82,6 @@ while not done:
     next_state, reward, terminated, truncated, _ = env.step(action)
 
     total_reward += reward
-    state = next_state.reshape(1, state_size)
     done = terminated or truncated
 
 print("Total Reward:", total_reward)
