@@ -14,16 +14,17 @@ class GameEnv(gym.Env):
         self._map_merges: np.ndarray = np.zeros([5, 7], dtype=np.int32)
         self._last_move_column: int = 0
 
-        self.observation_space: gym.Space = gym.spaces.Dict(
-            {
-                "moves": gym.spaces.Box(low=1, high=6, shape=[2], dtype=np.int32),
-                "map": gym.spaces.Box(low=0, high=11, shape=[5, 7], dtype=np.int32),
-            }
+        self.observation_space: gym.Space = gym.spaces.Box(
+            shape=[37],
+            low=np.array([1, 1] + [0] * 35, dtype=np.int32),
+            high=np.array([6, 6] + [11] * 35, dtype=np.int32),
+            dtype=np.int32,
         )
+
         self.action_space: gym.Space = gym.spaces.Discrete(5)
 
-    def _get_obs(self) -> dict[str, np.ndarray]:
-        return {"moves": self.next, "map": self.map}
+    def _get_obs(self) -> np.ndarray:
+        return np.concatenate([self.next, self.map.flatten()])
 
     def _get_info(self) -> dict[str, int]:
         return {"game_level": self.game_level, "move_count": self.move_count}
