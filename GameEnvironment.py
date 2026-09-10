@@ -24,7 +24,7 @@ class GameEnv(gym.Env):
         self.action_space: gym.Space = gym.spaces.Discrete(5)
 
     def _get_obs(self) -> np.ndarray:
-        return np.concatenate([self.next, self.map.flatten()])
+        return np.concatenate([self.next, self.map.ravel()])
 
     def _get_info(self) -> dict[str, int]:
         return {"game_level": self.game_level, "move_count": self.move_count}
@@ -41,7 +41,7 @@ class GameEnv(gym.Env):
 
     def step(
         self, action
-    ) -> tuple[dict[str, np.ndarray], SupportsFloat, bool, bool, dict[str, int]]:
+    ) -> tuple[np.ndarray, SupportsFloat, bool, bool, dict[str, int]]:
         self._last_move_column = action
         reward = 0
 

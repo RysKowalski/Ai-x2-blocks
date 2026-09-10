@@ -19,7 +19,7 @@ action_size = 5
 print("State Size:", state_size)
 print("Action Size:", action_size)
 
-model = Sequential(
+model: Sequential = Sequential(
     [
         tf.keras.Input((state_size,)),
         Dense(state_size),
