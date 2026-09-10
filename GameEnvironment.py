@@ -14,13 +14,13 @@ class GameEnv(gym.Env):
         self._map_merges: np.ndarray = np.zeros([5, 7], dtype=np.int32)
         self._last_move_column: int = 0
 
-        self.observation_space = gym.spaces.Dict(
+        self.observation_space: gym.Space = gym.spaces.Dict(
             {
                 "moves": gym.spaces.Box(low=1, high=6, shape=[2], dtype=np.int32),
                 "map": gym.spaces.Box(low=0, high=11, shape=[5, 7], dtype=np.int32),
             }
         )
-        self.action_space = gym.spaces.Discrete(5)
+        self.action_space: gym.Space = gym.spaces.Discrete(5)
 
     def _get_obs(self) -> dict[str, np.ndarray]:
         return {"moves": self.next, "map": self.map}
