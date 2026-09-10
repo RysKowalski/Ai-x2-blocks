@@ -258,12 +258,12 @@ def test_step_consumes_next_move() -> None:
 def test_step_game_level_increases() -> None:
     env = GameEnv()
     env.reset()
-    env.map[0, 0] = 12
-    env.next[0] = 2
+    env.next[0] = 11
+    env.next[1] = 11
+    env.map[1, 0] = 2
 
-    print(env.map)
-    env.step(1)
-    print(env.map)
+    env.step(0)
+    env.step(0)
 
     assert env.game_level == 1
     assert env.map[0, 0] == 11
