@@ -11,6 +11,9 @@ class GameEnv(gym.Env):
         self.game_level: int = 0
         self.move_count: int = 0
 
+        self._map_merges: np.ndarray = np.zeros([5, 7], dtype=np.int32)
+        self._last_move_column: int = 0
+
         self.observation_space = gym.spaces.Dict(
             {
                 "moves": gym.spaces.Box(low=1, high=6, shape=[2], dtype=np.int32),
@@ -38,6 +41,7 @@ class GameEnv(gym.Env):
     def step(
         self, action
     ) -> tuple[dict[str, np.ndarray], SupportsFloat, bool, bool, dict[str, int]]:
+        self._last_move_column = action
         reward = 0
 
         canMergeOnTop: bool = self.map[action, 6] == self.next[0]
@@ -83,9 +87,27 @@ class GameEnv(gym.Env):
             self.map[col, : len(values)] = values
 
     def merge(self) -> bool:
+        for col in range(5):
+            for row in range(7):
+                c = self.map[col, row]
+                if c == 0:
+                    self._map_merges[col, row] = 0
+                    continue
+                same_tiles: int = 1
+                if col > 0:
+                    same_tiles += self.map[col - 1, row] == c
+                if col < 4:
+                    same_tiles += self.map[col + 1, row] == c
+                if row > 0:
+                    same_tiles += self.map[col, row - 1] == c
+                if row < 6:
+                    same_tiles += self.map[col, row + 1] == c
+                self._map_merges[col, row] = same_tiles
+
         # przez wszystkie elementy policzyć ile można połączyć
         # jeżeli jest więcej niż 1 max, priorytezować
         # kolumnę ostztbiego ruchu
+        # znajdź największy index dla każdej kolumny, sprawdź który jest największy, jeżeli remis to
         return False
 
     def detect_termination(self) -> bool:
