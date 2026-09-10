@@ -7,7 +7,6 @@ def run_tui(env: GameEnv) -> None:
     truncated = False
 
     while True:
-        print("\033[2J\033[H", end="")
         print_state(env)
         print()
         print("Choose action [1-5], or q to quit:")
@@ -50,7 +49,7 @@ def run_tui(env: GameEnv) -> None:
 def print_state(env: GameEnv) -> None:
     map_view = env.map.T[::-1]
 
-    print("┌" + "───" * map_view.shape[1] + "┐")
+    print("┌" + "─" * (map_view.shape[1] * 4 - 1) + "┐")
 
     for row in map_view:
         print("│", end="")
@@ -58,7 +57,7 @@ def print_state(env: GameEnv) -> None:
             print(f" {int(value):2}", end="│")
         print()
 
-    print("└" + "───" * map_view.shape[1] + "┘")
+    print("└" + "─" * (map_view.shape[1] * 4 - 1) + "┘")
     print(f"Next: {env.next.tolist()}")
 
 

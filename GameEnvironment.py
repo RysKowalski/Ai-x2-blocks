@@ -93,7 +93,7 @@ class GameEnv(gym.Env):
                 if c == 0:
                     self._map_merges[col, row] = 0
                     continue
-                same_tiles: int = 1
+                same_tiles: int = 0
                 if col > 0:
                     same_tiles += self.map[col - 1, row] == c
                 if col < 4:
@@ -108,16 +108,74 @@ class GameEnv(gym.Env):
         # jeżeli jest więcej niż 1 max, priorytezować
         # kolumnę ostztbiego ruchu
         # znajdź największy index dla każdej kolumny, sprawdź który jest największy, jeżeli remis to
+
+        best_pos: tuple[int, int] | None = None
+        best_score = -1
+
+        for col in range(5):
+            for row in range(7):
+                score = self._map_merges[col, row]
+
+                if score > best_score:
+                    best_score = score
+                    best_pos = (col, row)
+                elif (
+                    score == best_score
+                    and best_pos is not None
+                    and col == self._last_move_column
+                    and best_pos[0] != self._last_move_column
+                ):
+                    best_pos = (col, row)
+
+        if best_score > 0 and best_pos is not None:
+            self.merge_single(best_pos)
+            self.check_game_level()
+            return True
+
         return False
 
+    def merge_single(self, pos: tuple[int, int]) -> None:
+        print(pos)
+        print(self._map_merges)
+        amount: int = 0
+        c = self.map[pos]
+        if pos[0] > 0:
+            if self.map[pos[0] - 1, pos[1]] == c:
+                amount += 1
+                self.map[pos[0] - 1, pos[1]] = 0
+        if pos[0] < 4:
+            if self.map[pos[0] + 1, pos[1]] == c:
+                amount += 1
+                self.map[pos[0] + 1, pos[1]] = 0
+        if pos[1] > 0:
+            if self.map[pos[0], pos[1] - 1] == c:
+                amount += 1
+                self.map[pos[0], pos[1] - 1] = 0
+        if pos[1] < 6:
+            if self.map[pos[0], pos[1] + 1] == c:
+                amount += 1
+                self.map[pos[0], pos[1] + 1] = 0
+
+        self.map[pos] += amount
+
+    def check_game_level(self) -> None:
+        diff: int = self.map.max() - 11
+
+        if diff > 0:
+            np.subtract(self.map, diff, out=self.map)
+            np.maximum(self.map, 0, out=self.map)
+            self.game_level += diff
+
     def detect_termination(self) -> bool:
-        return not any(self.map[i, 6] == 0 or self.next[0] for i in range(5))
+        return not any(
+            self.map[i, 6] == 0 or self.map[i, 6] == self.next[0] for i in range(5)
+        )
 
 
 if __name__ == "__main__":
     env = GameEnv()
     env.reset()
-    env.map[1, 6] = 1
     env.next[0] = 1
+    env.next[1] = 1
     for i in range(20):
         print(env.step(1))

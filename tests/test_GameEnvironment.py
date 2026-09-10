@@ -261,7 +261,9 @@ def test_step_game_level_increases() -> None:
     env.map[0, 0] = 12
     env.next[0] = 2
 
+    print(env.map)
     env.step(1)
+    print(env.map)
 
     assert env.game_level == 1
     assert env.map[0, 0] == 11
