@@ -1,5 +1,8 @@
+from collections import deque
+
 import numpy as np
 import tensorflow as tf
+import keras
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 
@@ -18,71 +21,105 @@ action_size = 5
 print("State Size:", state_size)
 print("Action Size:", action_size)
 
-model: Sequential = Sequential(
-    [
-        tf.keras.Input((37,)),
-        Dense(32, activation="relu"),
-        Dense(32, activation="relu"),
-        Dense(5),
-    ]
-)
-
-model.compile(optimizer="adam", loss="mse")
 
 gamma = 0.95
-epsilon = 1.0
-epsilon_decay = 0.99
+epsilon = 0.5
+epsilon_decay = 0.995
 epsilon_min = 0.01
-episodes = 100
+episodes = 400
+memory_size = 10000
 
-for episode in range(episodes):
+memory: deque = deque(maxlen=memory_size)
+
+
+def create_net(new: bool) -> Sequential:
+    if new:
+        model = Sequential(
+            [
+                keras.Input((37,)),
+                Dense(32, activation="relu"),
+                Dense(32, activation="relu"),
+                Dense(5, activation="linear"),
+            ]
+        )
+        model.compile(optimizer="adam", loss="mse")
+        return model
+    else:
+        return keras.saving.load_model("model.keras")
+
+
+policy_net: Sequential = create_net(False)
+target_net: Sequential = create_net(False)
+
+
+def get_action(env, state, epsilon: float) -> int:
+    legal_actions = np.flatnonzero(env.avalible_moves)
+
+    if np.random.rand() < epsilon:
+        return int(np.random.choice(legal_actions))
+
+    q_values = policy_net.predict(state, verbose=0)[0]
+    q_values = np.where(env.avalible_moves, q_values, -np.inf)
+
+    return int(np.argmax(q_values))
+
+
+try:
+    for episode in range(episodes):
+        state, _ = env.reset()
+
+        done = False
+        total_reward: float = 0
+
+        while not done:
+            action = get_action(env, state, epsilon)
+
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            total_reward += float(reward)
+
+            target = reward
+            if not done:
+                target += gamma * np.max(target_net.predict(next_state, verbose=0))
+
+            q_values = target_net.predict(
+                state,
+                verbose=0,
+            )
+            q_values[0][action] = target
+
+            target_net.fit(state, q_values, epochs=1, verbose=0)
+            state = next_state
+
+        epsilon = max(epsilon_min, epsilon * epsilon_decay)
+
+        print(
+            f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}"
+        )
+except KeyboardInterrupt:
+    target_net.save("interrupt_model.keras")
+
+
+for _ in range(10):
     state, _ = env.reset()
 
     done = False
-    total_reward: float = 0
+    total_reward = 0
 
-    actual_moves: int = 0
     while not done:
-        actual_moves += 1
-        if np.random.rand() < epsilon:
-            action = env.action_space.sample()
-        else:
-            action = np.argmax(model.predict(state, verbose=0))
+        action = get_action(env, state, 0)
 
         next_state, reward, terminated, truncated, _ = env.step(action)
-        done = terminated or truncated
+
         total_reward += float(reward)
-
-        target = reward
-        if not done:
-            target += gamma * np.max(model.predict(next_state, verbose=0))
-
-        q_values = model.predict(
-            state,
-            verbose=0,
-        )
-        q_values[0][action] = target
-
-        model.fit(state, q_values, epochs=1, verbose=0)
-        state = next_state
-
-    epsilon = max(epsilon_min, epsilon * epsilon_decay)
+        done = terminated or truncated
 
     print(
-        f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}, actual_moves: {actual_moves}"
+        "Total Reward:",
+        round(total_reward, 4),
+        " moves: ",
+        env.move_count,
+        " level: ",
+        env.game_level,
     )
-
-state, _ = env.reset()
-
-done = False
-total_reward = 0
-
-while not done:
-    action = np.argmax(model.predict(state, verbose=0))
-
-    next_state, reward, terminated, truncated, _ = env.step(action)
-
-    total_reward += float(reward)
-    done = terminated or truncated
-
-print("Total Reward:", total_reward)
+target_net.save("model.keras")

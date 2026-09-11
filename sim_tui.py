@@ -58,7 +58,7 @@ def print_state(env: GameEnv) -> None:
         print()
 
     print("└" + "─" * (map_view.shape[1] * 4 - 1) + "┘")
-    print(f"Next: {env.next.tolist()}")
+    print(f"Next: {env.next.tolist()}, reward: {round(env._reward, 4)}")
 
 
 if __name__ == "__main__":

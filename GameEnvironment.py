@@ -14,6 +14,7 @@ class GameEnv(gym.Env):
 
         self._map_merges: np.ndarray = np.zeros([5, 7], dtype=np.int32)
         self._last_move_column: int = 0
+        self._reward: float = 0
 
         self.observation_space: gym.Space = gym.spaces.Box(
             shape=[37],
@@ -45,12 +46,12 @@ class GameEnv(gym.Env):
         self, action
     ) -> tuple[np.ndarray, SupportsFloat, bool, bool, dict[str, int]]:
         self._last_move_column = action
-        reward = 0
+        self._reward = 0
 
         canMergeOnTop: bool = self.map[action, 6] == self.next[0]
         if self.map[action, 6] == 0 or canMergeOnTop:
             self.move_count += 1
-            reward = 0.01
+            self._reward += 0.01
 
             if canMergeOnTop:
                 self.map[action, 6] = self.next[0] + 1
@@ -61,13 +62,17 @@ class GameEnv(gym.Env):
 
             self._fall_move_loop()
         else:
-            reward = -0.1
+            self._reward -= 0.1
 
         truncated = False
+        terminated = self._detect_termination()
+        for a in self.avalible_moves:
+            self._reward -= 0.2 if not a else 0
+
         return (
             self._get_obs(),
-            reward,
-            self._detect_termination(),
+            self._reward,
+            terminated,
             truncated,
             self._get_info(),
         )
@@ -106,11 +111,6 @@ class GameEnv(gym.Env):
                 if row < 6:
                     same_tiles += self.map[col, row + 1] == c
                 self._map_merges[col, row] = same_tiles
-
-        # przez wszystkie elementy policzyć ile można połączyć
-        # jeżeli jest więcej niż 1 max, priorytezować
-        # kolumnę ostztbiego ruchu
-        # znajdź największy index dla każdej kolumny, sprawdź który jest największy, jeżeli remis to
 
         best_pos: tuple[int, int] | None = None
         best_score = -1
@@ -158,6 +158,7 @@ class GameEnv(gym.Env):
                 self.map[pos[0], pos[1] + 1] = 0
 
         self.map[pos] += amount
+        self._reward += amount / 10
 
     def _check_game_level(self) -> None:
         diff: int = self.map.max() - 11
@@ -166,12 +167,14 @@ class GameEnv(gym.Env):
             np.subtract(self.map, diff, out=self.map)
             np.maximum(self.map, 0, out=self.map)
             self.game_level += diff
+            self._reward += diff
 
     def _detect_termination(self) -> bool:
         self.avalible_moves: list[bool] = [
             self.map[i, 6] == 0 or self.map[i, 6] == self.next[0] for i in range(5)
         ]
-        return not any(self.avalible_moves)
+        terminated: bool = not any(self.avalible_moves)
+        return terminated
 
 
 if __name__ == "__main__":
