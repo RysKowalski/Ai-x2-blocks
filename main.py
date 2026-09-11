@@ -51,7 +51,7 @@ for episode in range(episodes):
 
         next_state, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
-        total_reward += reward
+        total_reward += float(reward)
 
         target = reward
         if not done:
@@ -82,7 +82,7 @@ while not done:
 
     next_state, reward, terminated, truncated, _ = env.step(action)
 
-    total_reward += reward
+    total_reward += float(reward)
     done = terminated or truncated
 
 print("Total Reward:", total_reward)
