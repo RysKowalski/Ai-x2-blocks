@@ -1,8 +1,7 @@
-import gymnasium as gym
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import Sequential
 
 from GameEnvironment import GameEnv
 
@@ -42,7 +41,9 @@ for episode in range(episodes):
     done = False
     total_reward: float = 0
 
+    actual_moves: int = 0
     while not done:
+        actual_moves += 1
         if np.random.rand() < epsilon:
             action = env.action_space.sample()
         else:
@@ -68,7 +69,7 @@ for episode in range(episodes):
     epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
     print(
-        f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}"
+        f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}, actual_moves: {actual_moves}"
     )
 
 state, _ = env.reset()
