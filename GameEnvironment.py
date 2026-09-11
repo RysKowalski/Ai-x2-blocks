@@ -10,6 +10,7 @@ class GameEnv(gym.Env):
         self.next: np.ndarray = np.zeros([2], dtype=np.int32)
         self.game_level: int = 0
         self.move_count: int = 0
+        self.avalible_moves: list[bool] = [True, True, True, True, True]
 
         self._map_merges: np.ndarray = np.zeros([5, 7], dtype=np.int32)
         self._last_move_column: int = 0
@@ -32,10 +33,11 @@ class GameEnv(gym.Env):
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
         super().reset(seed=seed)
 
-        self.map: np.ndarray = np.zeros([5, 7], dtype=np.int32)
-        self.next: np.ndarray = self.np_random.integers(1, 6, size=[2], dtype=np.int32)
-        self.game_level: int = 0
-        self.move_count: int = 0
+        self.map = np.zeros([5, 7], dtype=np.int32)
+        self.next = self.np_random.integers(1, 6, size=[2], dtype=np.int32)
+        self.game_level = 0
+        self.move_count = 0
+        self.avalible_moves = [True, True, True, True, True]
 
         return self._get_obs(), self._get_info()
 
@@ -55,9 +57,9 @@ class GameEnv(gym.Env):
             else:
                 self.map[action, 6] = self.next[0]
 
-            self.new_next()
+            self._new_next()
 
-            self.fall_move_loop()
+            self._fall_move_loop()
         else:
             reward = -0.1
 
@@ -65,29 +67,29 @@ class GameEnv(gym.Env):
         return (
             self._get_obs(),
             reward,
-            self.detect_termination(),
+            self._detect_termination(),
             truncated,
             self._get_info(),
         )
 
-    def new_next(self) -> None:
+    def _new_next(self) -> None:
         self.next[0] = self.next[1]
         self.next[1] = self.np_random.integers(1, 6, dtype=np.int32)
 
-    def fall_move_loop(self) -> None:
+    def _fall_move_loop(self) -> None:
         merged: bool = True
 
         while merged:
-            self.fall()
-            merged = self.merge()
+            self._fall()
+            merged = self._merge()
 
-    def fall(self) -> None:
+    def _fall(self) -> None:
         for col in range(self.map.shape[0]):
             values: np.ndarray = self.map[col][self.map[col] != 0]
             self.map[col].fill(0)
             self.map[col, : len(values)] = values
 
-    def merge(self) -> bool:
+    def _merge(self) -> bool:
         for col in range(5):
             for row in range(7):
                 c = self.map[col, row]
@@ -129,13 +131,13 @@ class GameEnv(gym.Env):
                     best_pos = (col, row)
 
         if best_score > 0 and best_pos is not None:
-            self.merge_single(best_pos)
-            self.check_game_level()
+            self._merge_single(best_pos)
+            self._check_game_level()
             return True
 
         return False
 
-    def merge_single(self, pos: tuple[int, int]) -> None:
+    def _merge_single(self, pos: tuple[int, int]) -> None:
         amount: int = 0
         c = self.map[pos]
         if pos[0] > 0:
@@ -157,7 +159,7 @@ class GameEnv(gym.Env):
 
         self.map[pos] += amount
 
-    def check_game_level(self) -> None:
+    def _check_game_level(self) -> None:
         diff: int = self.map.max() - 11
 
         if diff > 0:
@@ -165,10 +167,11 @@ class GameEnv(gym.Env):
             np.maximum(self.map, 0, out=self.map)
             self.game_level += diff
 
-    def detect_termination(self) -> bool:
-        return not any(
+    def _detect_termination(self) -> bool:
+        self.avalible_moves: list[bool] = [
             self.map[i, 6] == 0 or self.map[i, 6] == self.next[0] for i in range(5)
-        )
+        ]
+        return not any(self.avalible_moves)
 
 
 if __name__ == "__main__":
