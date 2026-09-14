@@ -18,7 +18,7 @@ while True:
     truncated = False
 
     while not (terminated or truncated):
-        legal_actions = np.flatnonzero(env.avalible_moves)
+        legal_actions = np.flatnonzero(env.available_moves)
         action = int(np.random.choice(legal_actions))
         obs, reward, terminated, truncated, info = env.step(action)
         if info["game_level"] > 0:

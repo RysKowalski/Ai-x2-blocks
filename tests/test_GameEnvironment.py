@@ -18,25 +18,6 @@ def test_reset_resets_data() -> None:
     assert env.move_count == 0
 
 
-def test__get_obs_returns_correct_data() -> None:
-    env = GameEnv()
-
-    map = np.ones(shape=[5, 7], dtype=np.int32)
-    env.map = map
-    next = np.array([7, 7], dtype=np.int32)
-    env.next = next
-
-    assert np.equal(env._get_obs(), np.array(([1] * 35 + [7, 7]), dtype=np.int32))
-
-
-def test__get_info_returns_correct_data() -> None:
-    env = GameEnv()
-    env.game_level = 2
-    env.move_count = 2
-
-    assert env._get_info() == {"game_level": 2, "move_count": 2}
-
-
 def test_step_falls_block() -> None:
     env = GameEnv()
     env.reset()

@@ -1,9 +1,8 @@
 #include "GameEnvironment.hpp"
+#include "sim_tui.hpp"
 #include <iostream>
 
 int main(int argc, char *argv[]) {
-  for (int i = 0; i < 100; i++) {
-    std::cout << i << std::endl;
-  }
+  tui();
   return 0;
 }

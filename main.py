@@ -12,29 +12,19 @@ print("\nloading modules finished\n")
 
 env = GameEnv()
 
-state_size: int = 0
-if env.observation_space.shape is not None:
-    state_size = env.observation_space.shape[0]
-
-action_size = 5
-
-print("State Size:", state_size)
-print("Action Size:", action_size)
-
-
 gamma = 0.95
 epsilon = 0.5
 epsilon_decay = 0.995
 epsilon_min = 0.01
 episodes = 400
-memory_size = 10000
 
+memory_size = 10000
 memory: deque = deque(maxlen=memory_size)
 
 
 def create_net(new: bool) -> Sequential:
     if new:
-        model = Sequential(
+        model: Sequential = Sequential(
             [
                 keras.Input((37,)),
                 Dense(32, activation="relu"),
@@ -48,18 +38,18 @@ def create_net(new: bool) -> Sequential:
         return keras.saving.load_model("model.keras")
 
 
-policy_net: Sequential = create_net(False)
-target_net: Sequential = create_net(False)
+policy_net: Sequential = create_net(True)
+target_net: Sequential = create_net(True)
 
 
 def get_action(env, state, epsilon: float) -> int:
-    legal_actions = np.flatnonzero(env.avalible_moves)
+    legal_actions = np.flatnonzero(env.available_moves)
 
     if np.random.rand() < epsilon:
         return int(np.random.choice(legal_actions))
 
     q_values = policy_net.predict(state, verbose=0)[0]
-    q_values = np.where(env.avalible_moves, q_values, -np.inf)
+    q_values = np.where(env.available_moves, q_values, -np.inf)
 
     return int(np.argmax(q_values))
 

@@ -10,7 +10,7 @@ class GameEnv(gym.Env):
         self.next: np.ndarray = np.zeros([2], dtype=np.int32)
         self.game_level: int = 0
         self.move_count: int = 0
-        self.avalible_moves: list[bool] = [True, True, True, True, True]
+        self.available_moves: list[bool] = [True, True, True, True, True]
 
         self._map_merges: np.ndarray = np.zeros([5, 7], dtype=np.int32)
         self._last_move_column: int = 0
@@ -38,7 +38,7 @@ class GameEnv(gym.Env):
         self.next = self.np_random.integers(1, 6, size=[2], dtype=np.int32)
         self.game_level = 0
         self.move_count = 0
-        self.avalible_moves = [True, True, True, True, True]
+        self.available_moves = [True, True, True, True, True]
 
         return self._get_obs(), self._get_info()
 
@@ -66,7 +66,7 @@ class GameEnv(gym.Env):
 
         truncated = False
         terminated = self._detect_termination()
-        for a in self.avalible_moves:
+        for a in self.available_moves:
             self._reward -= 0.2 if not a else 0
 
         return (
@@ -170,10 +170,10 @@ class GameEnv(gym.Env):
             self._reward += diff
 
     def _detect_termination(self) -> bool:
-        self.avalible_moves: list[bool] = [
+        self.available_moves: list[bool] = [
             self.map[i, 6] == 0 or self.map[i, 6] == self.next[0] for i in range(5)
         ]
-        terminated: bool = not any(self.avalible_moves)
+        terminated: bool = not any(self.available_moves)
         return terminated
 
 

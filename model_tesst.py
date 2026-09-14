@@ -27,13 +27,13 @@ def print_state(env: GameEnv) -> None:
 
 
 def get_action(env, state, epsilon: float) -> int:
-    legal_actions = np.flatnonzero(env.avalible_moves)
+    legal_actions = np.flatnonzero(env.available_moves)
 
     if np.random.rand() < epsilon:
         return int(np.random.choice(legal_actions))
 
     q_values = model.predict(state, verbose=0)[0]
-    q_values = np.where(env.avalible_moves, q_values, -np.inf)
+    q_values = np.where(env.available_moves, q_values, -np.inf)
 
     return int(np.argmax(q_values))
 

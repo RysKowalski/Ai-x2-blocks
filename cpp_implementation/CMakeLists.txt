@@ -7,4 +7,5 @@ target_sources(main
   PRIVATE
     main.cpp
     GameEnvironment.cpp
+    sim_tui.cpp
 )
