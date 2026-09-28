@@ -11,6 +11,8 @@ from GameEnvironment import GameEnv
 
 print("\nloading modules finished\n")
 
+log_writer = tf.summary.create_file_writer("logs")
+
 env = GameEnv()
 
 gamma = 0.95
@@ -65,7 +67,7 @@ def get_action(env, state, epsilon: float) -> int:
     return int(np.argmax(q_values))
 
 
-def train() -> None:
+def train(episode: int) -> None:
     if len(memory) < batch_size:
         return
     batch = random.sample(memory, batch_size)
@@ -102,6 +104,17 @@ def train() -> None:
     gradients = tape.gradient(loss, online_net.trainable_variables)
     optimizer_fn.apply_gradients(zip(gradients, online_net.trainable_variables))
 
+    with log_writer.as_default():
+        tf.summary.scalar("training/loss", loss, step=episode)
+        tf.summary.scalar("training/mean_reward", tf.reduce_mean(rewards), step=episode)
+        tf.summary.scalar("training/mean_q", tf.reduce_mean(current_q), step=episode)
+        tf.summary.scalar(
+            "training/mean_target_q", tf.reduce_mean(target_q), step=episode
+        )
+        tf.summary.scalar("training/mean_next_q", tf.reduce_mean(next_q), step=episode)
+
+    log_writer.flush()
+
 
 try:
     for episode in range(episodes):
@@ -118,28 +131,27 @@ try:
             done = terminated or truncated
             total_reward += reward
 
-            # target += gamma * np.max(target_net.predict(next_state, verbose=0))
-            # q_values[0][action] = target
-            # q_values = target_net.predict(
-            #     state,
-            #     verbose=0,
-            # )
-            # target_net.fit(state, q_values, epochs=1, verbose=0)
-
             memory.append((state, action, reward, next_state, done))
 
             state = next_state
 
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
-        train()
+        train(episode)
         if episode % copy_network_every_episodes == 0:
             target_net.set_weights(online_net.get_weights())
 
         print(
             f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}"
         )
+        with log_writer.as_default():
+            tf.summary.scalar("training/reward", total_reward, step=episode)
+            tf.summary.scalar("training/moves", env.move_count, step=episode)
+            tf.summary.scalar("training/level", env.game_level, step=episode)
+
 except KeyboardInterrupt:
     target_net.save("interrupt_model.keras")
+    exit()
+
 
 target_net.save("model.keras")
 
