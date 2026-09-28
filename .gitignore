@@ -1,3 +1,4 @@
 __pycache__/ 
-*.keras
-logs/
+model.keras
+interrupt_model.keras
+!logs/model.keras

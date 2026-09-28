@@ -51,7 +51,7 @@ class GameEnv(gym.Env):
         canMergeOnTop: bool = self.map[action, 6] == self.next[0]
         if self.map[action, 6] == 0 or canMergeOnTop:
             self.move_count += 1
-            self._reward += 0.05
+            self._reward += 0.1
 
             if canMergeOnTop:
                 self.map[action, 6] = self.next[0] + 1

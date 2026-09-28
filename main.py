@@ -11,30 +11,33 @@ from GameEnvironment import GameEnv
 
 print("\nloading modules finished\n")
 
-log_writer = tf.summary.create_file_writer("logs")
+log_writer = tf.summary.create_file_writer("logs/3xDense")
 
 env = GameEnv()
 
-gamma = 0.95
-epsilon = 0.5
+episode = 1500
+episodes_to_do = episode + 1000
+
+gamma = 0.98
+epsilon = 0.01
 epsilon_decay = 0.995
 epsilon_min = 0.01
-episodes = 350
 
-copy_network_every_episodes: int = 5
-batch_size: int = 30
+copy_network_every_episodes: int = 6
+batch_size: int = 128
 memory_size = 10000
+warmup = 1000
 memory: deque[tuple[np.ndarray, int, float, np.ndarray, bool]] = deque(
     maxlen=memory_size
 )
 
 
-Sequential(
-    [
-        keras.layers.Conv2D((35), (5, 7), activation="relu"),
-        keras.layers.Conv2D((35), (5, 7), activation="relu"),
-    ]
-)
+# Sequential(
+#     [
+#         keras.layers.Conv2D((35), (5, 7), activation="relu"),
+#         keras.layers.Conv2D((35), (5, 7), activation="relu"),
+#     ]
+# )
 
 
 def create_net(new: bool) -> Sequential:
@@ -42,7 +45,8 @@ def create_net(new: bool) -> Sequential:
         model: Sequential = Sequential(
             [
                 keras.Input((37,)),
-                Dense(64, activation="relu"),
+                Dense(128, activation="relu"),
+                Dense(128, activation="relu"),
                 Dense(64, activation="relu"),
                 Dense(5, activation="linear"),
             ]
@@ -57,7 +61,7 @@ def create_net(new: bool) -> Sequential:
 
 
 optimizer_fn = keras.optimizers.Adam()
-loss_fn = keras.losses.MeanSquaredError()
+loss_fn = keras.losses.Huber()
 
 online_net: Sequential = create_net(True)
 target_net: Sequential = create_net(True)
@@ -76,7 +80,7 @@ def get_action(env, state, epsilon: float) -> int:
 
 
 def train(episode: int) -> None:
-    if len(memory) < batch_size:
+    if len(memory) < batch_size or len(memory) < warmup:
         return
     batch = random.sample(memory, batch_size)
 
@@ -123,7 +127,7 @@ def train(episode: int) -> None:
 
 
 try:
-    for episode in range(episodes):
+    for episode in range(episode, episodes_to_do):
         state, _ = env.reset()
 
         done = False
