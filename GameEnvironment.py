@@ -51,7 +51,7 @@ class GameEnv(gym.Env):
         canMergeOnTop: bool = self.map[action, 6] == self.next[0]
         if self.map[action, 6] == 0 or canMergeOnTop:
             self.move_count += 1
-            self._reward += 0.01
+            self._reward += 0.05
 
             if canMergeOnTop:
                 self.map[action, 6] = self.next[0] + 1
@@ -60,14 +60,14 @@ class GameEnv(gym.Env):
 
             self._new_next()
 
-            self._fall_move_loop()
+            self._fall_merge_loop()
         else:
             self._reward -= 0.1
 
         truncated = False
         terminated = self._detect_termination()
         for a in self.available_moves:
-            self._reward -= 0.2 if not a else 0
+            self._reward -= 0.05 if not a else 0
 
         return (
             self._get_obs(),
@@ -81,7 +81,7 @@ class GameEnv(gym.Env):
         self.next[0] = self.next[1]
         self.next[1] = self.np_random.integers(1, 6, dtype=np.int32)
 
-    def _fall_move_loop(self) -> None:
+    def _fall_merge_loop(self) -> None:
         merged: bool = True
 
         while merged:
@@ -158,7 +158,7 @@ class GameEnv(gym.Env):
                 self.map[pos[0], pos[1] + 1] = 0
 
         self.map[pos] += amount
-        self._reward += amount / 10
+        self._reward += (amount**2) / 10
 
     def _check_game_level(self) -> None:
         diff: int = self.map.max() - 11
@@ -167,7 +167,7 @@ class GameEnv(gym.Env):
             np.subtract(self.map, diff, out=self.map)
             np.maximum(self.map, 0, out=self.map)
             self.game_level += diff
-            self._reward += diff
+            self._reward += diff * 2
 
     def _detect_termination(self) -> bool:
         self.available_moves: list[bool] = [

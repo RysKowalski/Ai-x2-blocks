@@ -29,13 +29,21 @@ memory: deque[tuple[np.ndarray, int, float, np.ndarray, bool]] = deque(
 )
 
 
+Sequential(
+    [
+        keras.layers.Conv2D((35), (5, 7), activation="relu"),
+        keras.layers.Conv2D((35), (5, 7), activation="relu"),
+    ]
+)
+
+
 def create_net(new: bool) -> Sequential:
     if new:
         model: Sequential = Sequential(
             [
                 keras.Input((37,)),
-                Dense(32, activation="relu"),
-                Dense(32, activation="relu"),
+                Dense(64, activation="relu"),
+                Dense(64, activation="relu"),
                 Dense(5, activation="linear"),
             ]
         )
@@ -51,8 +59,8 @@ def create_net(new: bool) -> Sequential:
 optimizer_fn = keras.optimizers.Adam()
 loss_fn = keras.losses.MeanSquaredError()
 
-online_net: Sequential = create_net(False)
-target_net: Sequential = create_net(False)
+online_net: Sequential = create_net(True)
+target_net: Sequential = create_net(True)
 
 
 def get_action(env, state, epsilon: float) -> int:
@@ -113,8 +121,6 @@ def train(episode: int) -> None:
         )
         tf.summary.scalar("training/mean_next_q", tf.reduce_mean(next_q), step=episode)
 
-    log_writer.flush()
-
 
 try:
     for episode in range(episodes):
@@ -147,6 +153,8 @@ try:
             tf.summary.scalar("training/reward", total_reward, step=episode)
             tf.summary.scalar("training/moves", env.move_count, step=episode)
             tf.summary.scalar("training/level", env.game_level, step=episode)
+
+        log_writer.flush()
 
 except KeyboardInterrupt:
     target_net.save("interrupt_model.keras")
