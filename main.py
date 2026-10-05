@@ -15,7 +15,7 @@ log_writer = tf.summary.create_file_writer("logs/3xDense")
 
 env = GameEnv()
 
-episode = 1500
+episode = 0
 episodes_to_do = episode + 1000
 
 gamma = 0.98
@@ -32,26 +32,17 @@ memory: deque[tuple[np.ndarray, int, float, np.ndarray, bool]] = deque(
 )
 
 
-# Sequential(
-#     [
-#         keras.layers.Conv2D((35), (5, 7), activation="relu"),
-#         keras.layers.Conv2D((35), (5, 7), activation="relu"),
-#     ]
-# )
-
-
 def create_net(new: bool) -> Sequential:
     if new:
         model: Sequential = Sequential(
             [
-                keras.Input((37,)),
+                keras.Input((397,)),
                 Dense(128, activation="relu"),
                 Dense(128, activation="relu"),
                 Dense(64, activation="relu"),
                 Dense(5, activation="linear"),
             ]
         )
-        model.compile(optimizer="adam", loss="mse")
         return model
     else:
         _model = keras.saving.load_model("model.keras")
@@ -73,6 +64,7 @@ def get_action(env, state, epsilon: float) -> int:
     if np.random.rand() < epsilon:
         return int(np.random.choice(legal_actions))
 
+    state = state.reshape(1, -1)
     q_values = online_net.predict(state, verbose=0)[0]
     q_values = np.where(env.available_moves, q_values, -np.inf)
 
@@ -176,7 +168,7 @@ for _ in range(10):
     while not done:
         action = get_action(env, state, 0)
 
-        next_state, reward, terminated, truncated, _ = env.step(action)
+        state, reward, terminated, truncated, _ = env.step(action)
 
         total_reward += float(reward)
         done = terminated or truncated

@@ -17,16 +17,24 @@ class GameEnv(gym.Env):
         self._reward: float = 0
 
         self.observation_space: gym.Space = gym.spaces.Box(
-            shape=[37],
-            low=np.array([1, 1] + [0] * 35, dtype=np.int32),
-            high=np.array([6, 6] + [11] * 35, dtype=np.int32),
+            shape=(399,),
+            low=0,
+            high=1,
             dtype=np.int32,
         )
 
         self.action_space: gym.Space = gym.spaces.Discrete(5)
 
     def _get_obs(self) -> np.ndarray:
-        return np.concatenate([self.next, self.map.flatten()]).reshape(1, -1)
+        next_encoded: np.ndarray = np.eye(6, dtype=np.int32)[self.next]
+        map_encoded: np.ndarray = np.eye(11, dtype=np.int32)[self.map]
+
+        return np.concatenate(
+            [
+                next_encoded.flatten(),
+                map_encoded.flatten(),
+            ]
+        )
 
     def _get_info(self) -> dict[str, int]:
         return {"game_level": self.game_level, "move_count": self.move_count}
