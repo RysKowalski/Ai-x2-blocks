@@ -32,6 +32,7 @@ def get_action(env, state, epsilon: float) -> int:
     if np.random.rand() < epsilon:
         return int(np.random.choice(legal_actions))
 
+    state = state.reshape(1, -1)
     q_values = model.predict(state, verbose=0)[0]
     q_values = np.where(env.available_moves, q_values, -np.inf)
 

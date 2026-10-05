@@ -11,23 +11,24 @@ from GameEnvironment import GameEnv
 
 print("\nloading modules finished\n")
 
-log_writer = tf.summary.create_file_writer("logs/3xDense")
+log_writer = tf.summary.create_file_writer("logs/new_representation")
 
 env = GameEnv()
 
-episode = 0
-episodes_to_do = episode + 1000
+episode = 2000
+episodes_to_do = episode + 500
 
 gamma = 0.98
 epsilon = 0.01
 epsilon_decay = 0.995
-epsilon_min = 0.01
+epsilon_min = 0.001
 
-copy_network_every_episodes: int = 6
-batch_size: int = 128
+copy_network_every_steps: int = 600
+train_every_steps: int = 100
+batch_size: int = 256
 memory_size = 10000
 warmup = 1000
-memory: deque[tuple[np.ndarray, int, float, np.ndarray, bool]] = deque(
+memory: deque[tuple[np.ndarray, int, float, np.ndarray, list[bool], bool]] = deque(
     maxlen=memory_size
 )
 
@@ -54,8 +55,8 @@ def create_net(new: bool) -> Sequential:
 optimizer_fn = keras.optimizers.Adam()
 loss_fn = keras.losses.Huber()
 
-online_net: Sequential = create_net(True)
-target_net: Sequential = create_net(True)
+online_net: Sequential = create_net(False)
+target_net: Sequential = create_net(False)
 
 
 def get_action(env, state, epsilon: float) -> int:
@@ -76,13 +77,11 @@ def train(episode: int) -> None:
         return
     batch = random.sample(memory, batch_size)
 
-    states, actions, rewards, next_states, dones = zip(*batch)
+    states, actions, rewards, next_states, next_available_moves, dones = zip(*batch)
 
     states = tf.convert_to_tensor(states, dtype=tf.int32)
-    states = tf.squeeze(states, axis=1)
 
     next_states = tf.convert_to_tensor(next_states, dtype=tf.int32)
-    next_states = tf.squeeze(next_states, axis=1)
 
     actions = tf.convert_to_tensor(actions, dtype=tf.int32)
     rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
@@ -99,8 +98,15 @@ def train(episode: int) -> None:
         )
 
         current_q = tf.gather_nd(q_values, indices)
-        next_q = tf.reduce_max(target_net(next_states), axis=1)
+        next_q_values = target_net(next_states)
 
+        next_q_values = tf.where(
+            next_available_moves,
+            next_q_values,
+            tf.constant(-np.inf, dtype=tf.float32),
+        )
+
+        next_q = tf.reduce_max(next_q_values, axis=1)
         target_q = rewards + gamma * next_q * (1.0 - dones)
 
         loss = loss_fn(target_q, current_q)
@@ -119,6 +125,7 @@ def train(episode: int) -> None:
 
 
 try:
+    global_steps: int = 0
     for episode in range(episode, episodes_to_do):
         state, _ = env.reset()
 
@@ -126,6 +133,7 @@ try:
         total_reward: float = 0
 
         while not done:
+            global_steps += 1
             action = get_action(env, state, epsilon)
 
             next_state, reward, terminated, truncated, _ = env.step(action)
@@ -133,14 +141,18 @@ try:
             done = terminated or truncated
             total_reward += reward
 
-            memory.append((state, action, reward, next_state, done))
+            memory.append(
+                (state, action, reward, next_state, env.available_moves.copy(), done)
+            )
 
             state = next_state
 
+            if global_steps % copy_network_every_steps == 0:
+                target_net.set_weights(online_net.get_weights())
+            if global_steps % train_every_steps == 0:
+                train(episode)
+
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
-        train(episode)
-        if episode % copy_network_every_episodes == 0:
-            target_net.set_weights(online_net.get_weights())
 
         print(
             f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}"

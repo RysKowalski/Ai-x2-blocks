@@ -72,7 +72,7 @@ class GameEnv(gym.Env):
         else:
             self._reward -= 0.1
 
-        truncated = False
+        truncated = self.game_level > 9
         terminated = self._detect_termination()
         for a in self.available_moves:
             self._reward -= 0.05 if not a else 0
@@ -175,7 +175,7 @@ class GameEnv(gym.Env):
             np.subtract(self.map, diff, out=self.map)
             np.maximum(self.map, 0, out=self.map)
             self.game_level += diff
-            self._reward += diff * 2
+            self._reward += diff * 10
 
     def _detect_termination(self) -> bool:
         self.available_moves: list[bool] = [
