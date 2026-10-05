@@ -11,17 +11,17 @@ from GameEnvironment import GameEnv
 
 print("\nloading modules finished\n")
 
-log_writer = tf.summary.create_file_writer("logs/new_representation")
+log_writer = tf.summary.create_file_writer("logs/DDQN")
 
 env = GameEnv()
 
-episode = 2000
-episodes_to_do = episode + 500
+episode = 0
+episodes_to_do = episode + 1000
 
 gamma = 0.98
-epsilon = 0.01
+epsilon = 1
 epsilon_decay = 0.995
-epsilon_min = 0.001
+epsilon_min = 0.005
 
 copy_network_every_steps: int = 600
 train_every_steps: int = 100
@@ -37,7 +37,7 @@ def create_net(new: bool) -> Sequential:
     if new:
         model: Sequential = Sequential(
             [
-                keras.Input((397,)),
+                keras.Input((432,)),
                 Dense(128, activation="relu"),
                 Dense(128, activation="relu"),
                 Dense(64, activation="relu"),
@@ -55,8 +55,8 @@ def create_net(new: bool) -> Sequential:
 optimizer_fn = keras.optimizers.Adam()
 loss_fn = keras.losses.Huber()
 
-online_net: Sequential = create_net(False)
-target_net: Sequential = create_net(False)
+online_net: Sequential = create_net(True)
+target_net: Sequential = create_net(True)
 
 
 def get_action(env, state, epsilon: float) -> int:

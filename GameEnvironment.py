@@ -17,7 +17,7 @@ class GameEnv(gym.Env):
         self._reward: float = 0
 
         self.observation_space: gym.Space = gym.spaces.Box(
-            shape=(399,),
+            shape=(432,),
             low=0,
             high=1,
             dtype=np.int32,
@@ -27,7 +27,7 @@ class GameEnv(gym.Env):
 
     def _get_obs(self) -> np.ndarray:
         next_encoded: np.ndarray = np.eye(6, dtype=np.int32)[self.next]
-        map_encoded: np.ndarray = np.eye(11, dtype=np.int32)[self.map]
+        map_encoded: np.ndarray = np.eye(12, dtype=np.int32)[self.map]
 
         return np.concatenate(
             [
