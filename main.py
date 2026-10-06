@@ -11,21 +11,23 @@ from GameEnvironment import GameEnv
 
 print("\nloading modules finished\n")
 
-log_writer = tf.summary.create_file_writer("logs/DDQN")
+TRAINING_NAME: str = "DDQN-2"
+log_writer = tf.summary.create_file_writer(f"logs/{TRAINING_NAME}")
 
 env = GameEnv()
 
 episode = 0
-episodes_to_do = episode + 1000
+episodes_to_do = episode + 2000
+save_model_every_episodes = 50
 
 gamma = 0.98
-epsilon = 1
+epsilon = 1.0
 epsilon_decay = 0.995
 epsilon_min = 0.005
 
 copy_network_every_steps: int = 600
 train_every_steps: int = 100
-batch_size: int = 256
+batch_size: int = 128
 memory_size = 10000
 warmup = 1000
 memory: deque[tuple[np.ndarray, int, float, np.ndarray, list[bool], bool]] = deque(
@@ -80,15 +82,15 @@ def train(episode: int) -> None:
     states, actions, rewards, next_states, next_available_moves, dones = zip(*batch)
 
     states = tf.convert_to_tensor(states, dtype=tf.int32)
-
-    next_states = tf.convert_to_tensor(next_states, dtype=tf.int32)
-
     actions = tf.convert_to_tensor(actions, dtype=tf.int32)
     rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
+    next_states = tf.convert_to_tensor(next_states, dtype=tf.int32)
+    next_available_moves = tf.convert_to_tensor(next_available_moves, dtype=tf.bool)
     dones = tf.convert_to_tensor(dones, dtype=tf.float32)
 
     with tf.GradientTape() as tape:
         q_values = online_net(states)
+
         indices = tf.stack(
             [
                 tf.range(tf.shape(actions)[0], dtype=tf.int32),
@@ -98,15 +100,24 @@ def train(episode: int) -> None:
         )
 
         current_q = tf.gather_nd(q_values, indices)
-        next_q_values = target_net(next_states)
 
-        next_q_values = tf.where(
+        next_online_q_values = target_net(next_states)
+        next_online_q_values = tf.where(
             next_available_moves,
-            next_q_values,
+            next_online_q_values,
             tf.constant(-np.inf, dtype=tf.float32),
         )
 
-        next_q = tf.reduce_max(next_q_values, axis=1)
+        next_actions = tf.argmax(next_online_q_values, axis=1, output_type=tf.int32)
+
+        next_target_q_values = target_net(next_states)
+
+        next_indicies = tf.stack(
+            [tf.range(tf.shape(next_actions)[0], dtype=tf.int32), next_actions], axis=1
+        )
+
+        next_q = tf.gather_nd(next_target_q_values, next_indicies)
+
         target_q = rewards + gamma * next_q * (1.0 - dones)
 
         loss = loss_fn(target_q, current_q)
@@ -129,7 +140,7 @@ try:
     for episode in range(episode, episodes_to_do):
         state, _ = env.reset()
 
-        done = False
+        done: bool = False
         total_reward: float = 0
 
         while not done:
@@ -138,7 +149,7 @@ try:
 
             next_state, reward, terminated, truncated, _ = env.step(action)
             reward = float(reward)
-            done = terminated or truncated
+            done = bool(terminated or truncated)
             total_reward += reward
 
             memory.append(
@@ -161,15 +172,19 @@ try:
             tf.summary.scalar("training/reward", total_reward, step=episode)
             tf.summary.scalar("training/moves", env.move_count, step=episode)
             tf.summary.scalar("training/level", env.game_level, step=episode)
+            tf.summary.scalar("training/epsilon", epsilon, step=episode)
 
         log_writer.flush()
+
+        if episode % save_model_every_episodes == 0:
+            online_net.save(f"logs/{TRAINING_NAME}-{episode}")
 
 except KeyboardInterrupt:
     target_net.save("interrupt_model.keras")
     exit()
 
 
-target_net.save("model.keras")
+online_net.save("model.keras")
 
 for _ in range(10):
     state, _ = env.reset()
