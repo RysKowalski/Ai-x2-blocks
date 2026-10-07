@@ -1,13 +1,18 @@
 import keras
 import numpy as np
+import tensorflow as tf
+import time
 
 from GameEnvironment import GameEnv
 
 
 MODEL_PATH: str = "model.keras"
 
-
-model = keras.saving.load_model(MODEL_PATH)
+m = keras.saving.load_model(MODEL_PATH)
+if isinstance(m, keras.Sequential):
+    model: keras.Sequential = m
+else:
+    raise
 
 
 def print_state(env: GameEnv) -> None:
@@ -26,17 +31,22 @@ def print_state(env: GameEnv) -> None:
     print(f"Move: {env.move_count}  Level: {env.game_level}")
 
 
-def get_action(env, state, epsilon: float) -> int:
+def get_action(env: GameEnv, state: np.ndarray, epsilon: float) -> int:
     legal_actions = np.flatnonzero(env.available_moves)
 
     if np.random.rand() < epsilon:
         return int(np.random.choice(legal_actions))
 
-    state = state.reshape(1, -1)
-    q_values = model.predict(state, verbose=0)[0]
-    q_values = np.where(env.available_moves, q_values, -np.inf)
+    state_tensor = tf.convert_to_tensor(state[None, :], dtype=tf.float32)
+    q_values = model(state_tensor)[0]
 
-    return int(np.argmax(q_values))
+    q_values = tf.where(
+        tf.convert_to_tensor(env.available_moves),
+        q_values,
+        -np.inf,
+    )
+
+    return int(tf.argmax(q_values).numpy())
 
 
 def play_game() -> None:
@@ -61,6 +71,7 @@ def play_game() -> None:
         print_state(env)
         print(f"Action: {action}")
         print(f"Step reward: {float(reward):.4f}")
+        time.sleep(0.01)
 
     print()
     print("=" * 40)

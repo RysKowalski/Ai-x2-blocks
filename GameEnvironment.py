@@ -166,7 +166,7 @@ class GameEnv(gym.Env):
                 self.map[pos[0], pos[1] + 1] = 0
 
         self.map[pos] += amount
-        self._reward += (amount**2) / (10 - c)
+        self._reward += (amount**2) / max(1, 10 - c)
 
     def _check_game_level(self) -> None:
         diff: int = self.map.max() - 11

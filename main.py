@@ -11,18 +11,18 @@ from GameEnvironment import GameEnv
 
 print("\nloading modules finished\n")
 
-TRAINING_NAME: str = "DDQN-2"
+TRAINING_NAME: str = "DDQN-5"
 log_writer = tf.summary.create_file_writer(f"logs/{TRAINING_NAME}")
 
 env = GameEnv()
 
-episode = 0
-episodes_to_do = episode + 2000
+episode = 7000
+episodes_to_do = episode + 1000
 save_model_every_episodes = 50
 
 gamma = 0.98
-epsilon = 1.0
 epsilon_decay = 0.995
+epsilon = epsilon_decay**episode
 epsilon_min = 0.005
 
 copy_network_every_steps: int = 600
@@ -40,38 +40,44 @@ def create_net(new: bool) -> Sequential:
         model: Sequential = Sequential(
             [
                 keras.Input((432,)),
+                Dense(256, activation="relu"),
                 Dense(128, activation="relu"),
                 Dense(128, activation="relu"),
                 Dense(64, activation="relu"),
                 Dense(5, activation="linear"),
             ]
         )
+        model.compile("Adam", "Huber")
         return model
     else:
         _model = keras.saving.load_model("model.keras")
         if isinstance(_model, Sequential):
+            if _model.loss is None or _model.optimizer is None:
+                _model.compile("Adam", "Huber")
+
             return _model
         raise
 
 
-optimizer_fn = keras.optimizers.Adam()
-loss_fn = keras.losses.Huber()
+online_net: Sequential = create_net(False)
+target_net: Sequential = create_net(False)
+target_net.set_weights(online_net.get_weights())
 
-online_net: Sequential = create_net(True)
-target_net: Sequential = create_net(True)
+last_log_episode = -1
 
 
-def get_action(env, state, epsilon: float) -> int:
+def get_action(env: GameEnv, state, epsilon: float) -> int:
     legal_actions = np.flatnonzero(env.available_moves)
 
     if np.random.rand() < epsilon:
         return int(np.random.choice(legal_actions))
 
-    state = state.reshape(1, -1)
-    q_values = online_net.predict(state, verbose=0)[0]
-    q_values = np.where(env.available_moves, q_values, -np.inf)
+    state_tensor = tf.convert_to_tensor(state[None, :], dtype=tf.float32)
+    q_values = online_net(state_tensor)[0]
 
-    return int(np.argmax(q_values))
+    q_values = np.where(tf.convert_to_tensor(env.available_moves), q_values, -np.inf)
+
+    return int(tf.argmax(q_values).numpy())
 
 
 def train(episode: int) -> None:
@@ -101,7 +107,7 @@ def train(episode: int) -> None:
 
         current_q = tf.gather_nd(q_values, indices)
 
-        next_online_q_values = target_net(next_states)
+        next_online_q_values = online_net(next_states)
         next_online_q_values = tf.where(
             next_available_moves,
             next_online_q_values,
@@ -120,19 +126,28 @@ def train(episode: int) -> None:
 
         target_q = rewards + gamma * next_q * (1.0 - dones)
 
-        loss = loss_fn(target_q, current_q)
+        loss = online_net.loss(target_q, current_q)
 
     gradients = tape.gradient(loss, online_net.trainable_variables)
-    optimizer_fn.apply_gradients(zip(gradients, online_net.trainable_variables))
+    online_net.optimizer.apply_gradients(zip(gradients, online_net.trainable_variables))
 
-    with log_writer.as_default():
-        tf.summary.scalar("training/loss", loss, step=episode)
-        tf.summary.scalar("training/mean_reward", tf.reduce_mean(rewards), step=episode)
-        tf.summary.scalar("training/mean_q", tf.reduce_mean(current_q), step=episode)
-        tf.summary.scalar(
-            "training/mean_target_q", tf.reduce_mean(target_q), step=episode
-        )
-        tf.summary.scalar("training/mean_next_q", tf.reduce_mean(next_q), step=episode)
+    global last_log_episode
+    if last_log_episode != episode:
+        last_log_episode = episode
+        with log_writer.as_default():
+            tf.summary.scalar("training/loss", loss, step=episode)
+            tf.summary.scalar(
+                "training/mean_reward", tf.reduce_mean(rewards), step=episode
+            )
+            tf.summary.scalar(
+                "training/mean_q", tf.reduce_mean(current_q), step=episode
+            )
+            tf.summary.scalar(
+                "training/mean_target_q", tf.reduce_mean(target_q), step=episode
+            )
+            tf.summary.scalar(
+                "training/mean_next_q", tf.reduce_mean(next_q), step=episode
+            )
 
 
 try:
@@ -176,8 +191,8 @@ try:
 
         log_writer.flush()
 
-        if episode % save_model_every_episodes == 0:
-            online_net.save(f"logs/{TRAINING_NAME}-{episode}")
+        if (episode + 1) % save_model_every_episodes == 0:
+            online_net.save(f"logs/{TRAINING_NAME}/{TRAINING_NAME}-{episode}.keras")
 
 except KeyboardInterrupt:
     target_net.save("interrupt_model.keras")
