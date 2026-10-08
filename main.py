@@ -16,8 +16,8 @@ log_writer = tf.summary.create_file_writer(f"logs/{TRAINING_NAME}")
 
 env = GameEnv()
 
-episode = 6000
-episodes_to_do = episode + 6000
+episode = 7400
+episodes_to_do = episode + 7000
 save_model_every_episodes = 50
 
 gamma = 0.98
@@ -184,7 +184,7 @@ try:
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
         print(
-            f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}"
+            f"Episode {episode + 1} completed, reward: {total_reward}, moves: {env.move_count}, level: {env.game_level}"
         )
         with log_writer.as_default():
             tf.summary.scalar("training/reward", total_reward, step=episode)

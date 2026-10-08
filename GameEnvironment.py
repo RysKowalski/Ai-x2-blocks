@@ -76,7 +76,7 @@ class GameEnv(gym.Env):
         terminated = self._detect_termination()
         for a in self.available_moves:
             self._reward -= 0.05 if not a else 0
-        self._reward -= np.count_nonzero(self.map) * 0.01
+        self._reward += np.count_nonzero(self.map == 0) * 0.01
 
         return (
             self._get_obs(),
