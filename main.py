@@ -11,13 +11,13 @@ from GameEnvironment import GameEnv
 
 print("\nloading modules finished\n")
 
-TRAINING_NAME: str = "DDQN-5"
+TRAINING_NAME: str = "DDQN-6"
 log_writer = tf.summary.create_file_writer(f"logs/{TRAINING_NAME}")
 
 env = GameEnv()
 
-episode = 7000
-episodes_to_do = episode + 1000
+episode = 6000
+episodes_to_do = episode + 6000
 save_model_every_episodes = 50
 
 gamma = 0.98
@@ -40,20 +40,23 @@ def create_net(new: bool) -> Sequential:
         model: Sequential = Sequential(
             [
                 keras.Input((432,)),
+                Dense(512, activation="relu"),
                 Dense(256, activation="relu"),
-                Dense(128, activation="relu"),
                 Dense(128, activation="relu"),
                 Dense(64, activation="relu"),
                 Dense(5, activation="linear"),
             ]
         )
-        model.compile("Adam", "Huber")
+        model.compile(optimizer=keras.optimizers.Adam(), loss=keras.losses.Huber())
+
         return model
     else:
         _model = keras.saving.load_model("model.keras")
         if isinstance(_model, Sequential):
             if _model.loss is None or _model.optimizer is None:
-                _model.compile("Adam", "Huber")
+                _model.compile(
+                    optimizer=keras.optimizers.Adam(), loss=keras.losses.Huber()
+                )
 
             return _model
         raise
